@@ -13,7 +13,7 @@ def plot_kde(
         y_label: str = "Frequency",
         hue_by: pd.Series | pd.DataFrame = None
     ) -> None:
-    '''Plot Kernel Density Estimation of the given data.
+    """Plot Kernel Density Estimation of the given data.
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def plot_kde(
     Returns
     -------
     None
-    '''
+    """
 
     plt.figure(figsize=(10, 7))
 
@@ -66,7 +66,7 @@ def plot_feature_spans(
         sort_features: bool = True,
         title: str = "Features"
     ) -> None:
-    '''Plot the min, max, and mean values of each feature in the dataframe.
+    """Plot the mean, min, max, and IQR of each feature in the dataframe.
 
     Parameters
     ----------
@@ -82,7 +82,7 @@ def plot_feature_spans(
     Returns
     -------
     None
-    '''
+    """
 
     if isinstance(data, pd.DataFrame):
         data = data.to_numpy()
@@ -92,7 +92,9 @@ def plot_feature_spans(
     stats = np.array([
         np.mean(data, axis=0),
         np.min(data, axis=0),
-        np.max(data, axis=0)
+        np.max(data, axis=0),
+        np.percentile(data, 25, axis=0),
+        np.percentile(data, 75, axis=0)
     ]).T
 
     if sort_features:
@@ -104,36 +106,51 @@ def plot_feature_spans(
 
     fig.add_trace(go.Scatter(
         x=feature_indices, y=stats[:, 0], 
-        mode='markers',
-        marker=dict(color='black', size=12),
+        mode="markers",
+        marker=dict(color="black", size=12),
         zorder=3,
         name="Mean"
     ))
-    
+
     for i in feature_indices:
         min_val = stats[i, 1]
         max_val = stats[i, 2]
+        q25 = stats[i, 3]
+        q75 = stats[i, 4]
+
         fig.add_trace(go.Scatter(
             x=[i, i],
             y=[min_val, max_val],
-            mode='lines',
-            line=dict(color='red', width=5, dash='solid'),
+            mode="lines",
+            line=dict(color="#6f42f5", width=5, dash="solid"),
             showlegend=False,
             hoverinfo="none",
             name="Min to Max"
         ))
 
+        fig.add_trace(go.Scatter(
+            x=[i, i],
+            y=[q25, q75],
+            mode="lines",
+            line=dict(color="#f54278", width=10, dash="solid", shape="spline"),
+            opacity=0.5,
+            showlegend=i == 0,
+            hoverinfo="none",
+            zorder=2,
+            name="IQR"
+        ))
+
     fig.add_trace(go.Scatter(
         x=feature_indices, y=stats[:, 1], 
-        mode='markers',
-        marker=dict(color='red', size=10),
+        mode="markers",
+        marker=dict(color="#6f42f5", size=10),
         name="Min"
     ))
 
     fig.add_trace(go.Scatter(
         x=feature_indices, y=stats[:, 2], 
-        mode='markers',
-        marker=dict(color='red', size=10),
+        mode="markers",
+        marker=dict(color="#6f42f5", size=10),
         name="Max"
     ))
 
@@ -156,7 +173,7 @@ def plot_correlation_coefficients(
         show_plot: bool = True,
         title: str = "Correlation Coefficients"
     ) -> tuple[np.ndarray, list]:
-    '''Calculate the correlation coefficients of the given dataframe against the
+    """Calculate the correlation coefficients of the given dataframe against the
     given target data.
 
     The correlation coefficients are calculated using Pearson, Spearman, and Kendall
@@ -190,7 +207,7 @@ def plot_correlation_coefficients(
 
     sorted_cols: list
         The sorted columns of the dataframe based on the correlation coefficients.
-    '''
+    """
 
     if isinstance(df, pd.Series):
         df = df.to_frame()
@@ -261,7 +278,7 @@ def plot_correlated_pairplot(
         scatter_color: str = "#55278c",
         kde_color: str = "#7d47bf"
     ) -> None:
-    '''Creates a pairplot with Pearson, Spearman, and Kendall correlation
+    """Creates a pairplot with Pearson, Spearman, and Kendall correlation
     coefficients overlaid on the upper triangle of the plot and the lower
     triangle replaced with kernel density estimates.
 
@@ -282,10 +299,10 @@ def plot_correlated_pairplot(
     Returns
     -------
     None
-    '''
+    """
 
     def annotate_correlations(x, y, **kwargs):
-        '''Annotate the correlation coefficients on the pairplot.'''
+        """Annotate the correlation coefficients on the pairplot."""
 
         pearson_coef, _ = pearsonr(x, y)
         spearman_coef, _ = spearmanr(x, y)
@@ -300,20 +317,20 @@ def plot_correlated_pairplot(
         plt.annotate(
             text,
             xy=(0.95, 0.95),
-            xycoords='axes fraction',
-            ha='right',
-            va='top',
-            bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.75)
+            xycoords="axes fraction",
+            ha="right",
+            va="top",
+            bbox=dict(boxstyle="round,pad=0.5", fc="white", alpha=0.75)
         )
 
     def plot_mean(x, **kwargs):
-        '''Plot the mean of the data on the diagonal of the pairplot.'''
+        """Plot the mean of the data on the diagonal of the pairplot."""
 
         mean_val = np.mean(x)
         plt.axvline(
             mean_val,
-            color='black',
-            linestyle='--',
+            color="black",
+            linestyle="--",
             label=f"Mean: {mean_val:.2f}"
         )
         plt.legend()
