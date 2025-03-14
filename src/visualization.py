@@ -275,8 +275,8 @@ def plot_correlation_coefficients(
 def plot_correlated_pairplot(
         data: pd.DataFrame,
         title: str = "Pairplot with Correlation Coefficients and KDE",
-        scatter_color: str = "#55278c",
-        kde_color: str = "#7d47bf",
+        scatter_color: str = "#7a4db0",
+        kde_color: str = "#421f6e",
         overlay_correlations: bool = True
     ) -> None:
     """Creates a pairplot with Pearson, Spearman, and Kendall correlation
