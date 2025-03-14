@@ -276,7 +276,8 @@ def plot_correlated_pairplot(
         data: pd.DataFrame,
         title: str = "Pairplot with Correlation Coefficients and KDE",
         scatter_color: str = "#55278c",
-        kde_color: str = "#7d47bf"
+        kde_color: str = "#7d47bf",
+        overlay_correlations: bool = True
     ) -> None:
     """Creates a pairplot with Pearson, Spearman, and Kendall correlation
     coefficients overlaid on the upper triangle of the plot and the lower
@@ -296,6 +297,9 @@ def plot_correlated_pairplot(
     kde_color : str, default="#7d47bf"
         The color of the kernel density estimates.
 
+    overlay_correlations : bool, default=True
+        If True, the correlation coefficients are overlaid on the upper triangle of
+        the pairplot.
     Returns
     -------
     None
@@ -342,8 +346,9 @@ def plot_correlated_pairplot(
         diag_kws={"color": kde_color}
     )
 
+    if overlay_correlations:
+        g.map_upper(annotate_correlations)
     g.map_lower(sns.kdeplot, levels=4, color="black")
-    g.map_upper(annotate_correlations)
     g.map_diag(plot_mean)
 
     plt.suptitle(title, y=1.02)
