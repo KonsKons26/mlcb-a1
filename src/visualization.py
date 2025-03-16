@@ -1,6 +1,8 @@
+import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from IPython.display import display, clear_output
 import seaborn as sns
 import plotly.graph_objects as go
 from scipy.stats import pearsonr, spearmanr, kendalltau
@@ -61,6 +63,90 @@ def plot_kde(
     plt.show()
 
 
+def plot_animated_scatter_notebook_only(
+        Y: pd.Series,
+        X: pd.DataFrame,
+        t: float = 0.5,
+        title: str = "Animated Scatter Plot of targets vs features",
+    ) -> None:
+    """Dynamically plot scatter plots of Y vs each column in X, updating every t
+    seconds.
+    
+    Parameters
+    ----------
+    Y : pd.Series
+        The target data to plot against the features.
+
+    X : pd.DataFrame
+        The features to plot against the target data.
+
+    t : float, default=0.5
+        The time interval between each plot.
+
+    title : str, default="Animated Scatter Plot of targets vs features"
+        The title of the plot.
+
+    Returns
+    -------
+    None
+    """
+    for column in X.columns:
+        clear_output(wait=True)
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.scatter(X[column], Y, s=25, alpha=0.75, edgecolors="black")
+        ax.set_xlabel(column)
+        ax.set_ylabel(Y.name if Y.name else "Target")
+        ax.set_title(title)
+        
+        display(fig)
+        plt.close(fig)
+        time.sleep(t)
+
+
+def plot_zeros(
+        df: pd.DataFrame,
+        title: str = "Number of zeros in each feature"
+    ) -> None:
+    """Plot the number of zeros in each feature of the dataframe.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe to plot the number of zeros for.
+
+    title : str, default="Number of zeros in each feature"
+        The title of the plot.
+
+    Returns
+    -------
+    None
+    """
+    zeros = df.isin([0]).sum().sort_values(ascending=True)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(x=zeros.index, y=zeros.values))
+
+    fig.add_hline(
+        y=df.shape[0],
+        line_dash="dot",
+        line_color="red",
+        annotation_text=f"Total Samples ({df.shape[0]})",
+        annotation_position="top left",
+        annotation=dict(font_size=15)
+    )
+
+    fig.update_layout(
+        title_text=title,
+        xaxis_title="Feature",
+        yaxis_title="Number of zeros",
+        height=800
+    )
+
+    fig.show()
+
+
 def plot_feature_spans(
         data: pd.DataFrame | np.ndarray,
         sort_features: bool = True,
@@ -85,8 +171,11 @@ def plot_feature_spans(
     """
 
     if isinstance(data, pd.DataFrame):
+        feature_names = data.columns.tolist()
         data = data.to_numpy()
-    elif not isinstance(data, np.ndarray):
+    elif isinstance(data, np.ndarray):
+        feature_names = [f"Feature {i+1}" for i in range(data.shape[1])]
+    else:
         raise ValueError("Input must be a pandas DataFrame or a numpy array.")
 
     stats = np.array([
@@ -98,7 +187,9 @@ def plot_feature_spans(
     ]).T
 
     if sort_features:
-        stats = stats[stats[:, 0].argsort()]
+        sorted_indices = stats[:, 0].argsort()
+        stats = stats[sorted_indices]
+        feature_names = [feature_names[i] for i in sorted_indices]
 
     feature_indices = list(range(len(stats)))
 
@@ -135,7 +226,6 @@ def plot_feature_spans(
             line=dict(color="#f54278", width=10, dash="solid", shape="spline"),
             opacity=0.5,
             showlegend=i == 0,
-            hoverinfo="none",
             zorder=2,
             name="IQR"
         ))
@@ -156,11 +246,17 @@ def plot_feature_spans(
 
     fig.update_layout(
         title=title,
-        xaxis_title="Feature Index",
+        xaxis_title="Feature",
         yaxis_title="Values",
         template="plotly_white",
         hovermode="x unified",
-        height=600,
+        height=1000,
+        xaxis=dict(
+            tickmode='array',
+            tickvals=feature_indices,
+            ticktext=feature_names,
+            tickangle=45
+        )
     )
 
     fig.show()
@@ -300,6 +396,7 @@ def plot_correlated_pairplot(
     overlay_correlations : bool, default=True
         If True, the correlation coefficients are overlaid on the upper triangle of
         the pairplot.
+
     Returns
     -------
     None
