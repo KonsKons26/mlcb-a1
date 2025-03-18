@@ -220,8 +220,6 @@ def plot_feature_spans(
                 ])
             )
             
-
-
     feature_indices = list(range(len(stats)))
 
     fig = go.Figure()
@@ -304,7 +302,7 @@ def plot_correlation_coefficients(
     given target data.
 
     The correlation coefficients are calculated using Pearson, Spearman, and Kendall
-    methods. The correlation coefficients are then sorted based on the sum of the
+    tau methods. The correlation coefficients are then sorted based on the sum of the
     coefficients for each feature. The sorted features are plotted using a scatter
     plot.
 
