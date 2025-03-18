@@ -149,7 +149,7 @@ def plot_zeros(
 
 def plot_feature_spans(
         data: pd.DataFrame | np.ndarray,
-        sort_features: bool = True,
+        sort_features_by: bool | str = True,
         title: str = "Features"
     ) -> None:
     """Plot the mean, min, max, and IQR of each feature in the dataframe.
@@ -159,8 +159,10 @@ def plot_feature_spans(
     data : pandas DataFrame or numpy array
         The data to plot the feature spans for.
 
-    sort_features : bool, default=True
-        Whether to sort the features by their mean values.
+    sort_features_by : bool or str, default=False
+        If True, the features are sorted by the mean value. If a string is
+        passed, the features are sorted by the given statistic. The possible
+        values are "mean", "min", "max", "q25", and "q75".
 
     title : str, default="Features"
         The title of the plot.
@@ -186,10 +188,39 @@ def plot_feature_spans(
         np.percentile(data, 75, axis=0)
     ]).T
 
-    if sort_features:
-        sorted_indices = stats[:, 0].argsort()
-        stats = stats[sorted_indices]
-        feature_names = [feature_names[i] for i in sorted_indices]
+    if isinstance(sort_features_by, str):
+        sort_features_by = sort_features_by.lower()
+
+    if sort_features_by:
+        if sort_features_by == "mean" or sort_features_by == True:
+            sorted_indices = stats[:, 0].argsort()
+            stats = stats[sorted_indices]
+            feature_names = [feature_names[i] for i in sorted_indices]
+        elif sort_features_by == "min":
+            sorted_indices = stats[:, 1].argsort()
+            stats = stats[sorted_indices]
+            feature_names = [feature_names[i] for i in sorted_indices]
+        elif sort_features_by == "max":
+            sorted_indices = stats[:, 2].argsort()
+            stats = stats[sorted_indices]
+            feature_names = [feature_names[i] for i in sorted_indices]
+        elif sort_features_by == "q25":
+            sorted_indices = stats[:, 3].argsort()
+            stats = stats[sorted_indices]
+            feature_names = [feature_names[i] for i in sorted_indices]
+        elif sort_features_by == "q75":
+            sorted_indices = stats[:, 4].argsort()
+            stats = stats[sorted_indices]
+            feature_names = [feature_names[i] for i in sorted_indices]
+        else:
+            raise ValueError(
+                "".join([
+                    "Invalid value for sort_features_by.",
+                    "Must either 'mean', 'min', 'max', 'q25', 'q75', True or False."
+                ])
+            )
+            
+
 
     feature_indices = list(range(len(stats)))
 
