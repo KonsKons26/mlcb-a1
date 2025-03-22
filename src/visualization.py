@@ -106,19 +106,93 @@ def plot_animated_scatter_notebook_only(
         time.sleep(t)
 
 
+def plot_specific_feature(
+        df: pd.DataFrame,
+        feature: str,
+        target: pd.Series,
+        title: str = "Scatter plot of {} vs {}",
+        x_label: str = "Feature",
+        y_label: str = "Target"
+    ) -> None:
+    """Plot the given feature against the target data.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The dataframe containing the feature and target data.
+
+    feature : str
+        The name of the feature to plot.
+
+    target : pd.Series
+        The target data to plot against the feature.
+
+    title : str, default="Scatter plot of {} vs {}"
+        The title of the plot.
+
+    x_label : str, default="Feature"
+        The label for the x-axis.
+
+    y_label : str, default="Target"
+        The label for the y-axis.
+
+    Returns
+    -------
+    None
+    """
+
+    plt.figure(figsize=(10, 8))
+    sns.scatterplot(data=df, x=feature, y=target)
+    plt.title(title.format(feature, target.name))
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(True, linestyle="--", alpha=0.6)
+    plt.show()
+
+
 def plot_zeros(
         df: pd.DataFrame,
-        title: str = "Number of zeros in each feature"
+        target: pd.Series,
+        title: str = 
+            "Number of zeros in each feature and mean bmi for non-zero bacteria",
+        hist_title: str = "Number of zeros in each feature",
+        scatter_title: str = "Mean BMI for non-zero bacteria",
+        y1_hline_title: str = "Total Samples ({})",
+        y2_hline_title: str = "Mean BMI for all non-zero bacteria ({})",
+        yaxis_1_title: str = "Number of zeros",
+        yaxis_2_title: str = "Mean BMI"
     ) -> None:
-    """Plot the number of zeros in each feature of the dataframe.
-    
+    """Plot the number of zeros in each feature of the dataframe and the mean BMI
+    of the non zero samples.
+
     Parameters
     ----------
     df : pd.DataFrame
         The dataframe to plot the number of zeros for.
 
+    bmi : pd.Series
+        The BMI values of the samples.
+
     title : str, default="Number of zeros in each feature"
         The title of the plot.
+
+    hist_title : str, default="Number of zeros in each feature"
+        The title of the histogram.
+
+    scatter_title : str, default="Mean BMI for non-zero bacteria"
+        The title of the scatter plot.
+
+    y1_hline_title : str, default="Total Samples ({})"
+        The title of the first horizontal line.
+
+    y2_hline_title : str, default="Mean BMI for all non-zero bacteria ({})"
+        The title of the second horizontal line.
+
+    yaxis_1_title : str, default="Number of zeros"
+        The title of the y-axis for the histogram.
+
+    yaxis_2_title : str, default="Mean BMI"
+        The title of the y-axis for the scatter plot.
 
     Returns
     -------
@@ -126,23 +200,71 @@ def plot_zeros(
     """
     zeros = df.isin([0]).sum().sort_values(ascending=True)
 
+    means = []
+    for col in zeros.index:
+        non_zero_indices = df[col] != 0
+        mean_target = target[non_zero_indices].mean()
+        means.append(mean_target)
+
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(x=zeros.index, y=zeros.values))
+    fig.add_trace(go.Bar(
+        x=zeros.index,
+        y=zeros.values,
+        yaxis="y",
+        name=hist_title
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=zeros.index,
+        y=means,
+        yaxis="y2",
+        mode="markers",
+        marker=dict(color="black", size=12),
+        name=scatter_title
+    ))
 
     fig.add_hline(
         y=df.shape[0],
         line_dash="dot",
         line_color="red",
-        annotation_text=f"Total Samples ({df.shape[0]})",
+        annotation_text=y1_hline_title.format(df.shape[0]),
         annotation_position="top left",
-        annotation=dict(font_size=15)
+        annotation=dict(
+            font_size=15,
+            font_color="black",
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=2
+        )
+    )
+
+    fig.add_hline(
+        y=target.mean(),
+        yref="y2",
+        line_dash="dot",
+        line_color="red",
+        annotation_text=y2_hline_title.format(target.mean()),
+        annotation_position="top left",
+        annotation=dict(
+            font_size=15,
+            font_color="black",
+            bgcolor="white",
+            bordercolor="black",
+            borderwidth=2
+        )
     )
 
     fig.update_layout(
         title_text=title,
         xaxis_title="Feature",
-        yaxis_title="Number of zeros",
+        xaxis_tickangle=45,
+        yaxis_title=yaxis_1_title,
+        yaxis2=dict(
+            title=yaxis_2_title,
+            overlaying="y",
+            side="right"
+        ),
         height=800
     )
 
