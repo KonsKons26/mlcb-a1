@@ -2,6 +2,8 @@ import time
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from matplotlib.colors import Normalize
 from IPython.display import display, clear_output
 import seaborn as sns
 import plotly.graph_objects as go
@@ -402,6 +404,8 @@ def plot_correlated_pairplot(
         title: str = "Pairplot with Correlation Coefficients and KDE",
         scatter_color: str = "#7a4db0",
         kde_color: str = "#421f6e",
+        hue: pd.Series = None,
+        cmap: str = "viridis",
         overlay_correlations: bool = True
     ) -> None:
     """Creates a pairplot with Pearson, Spearman, and Kendall correlation
@@ -421,6 +425,12 @@ def plot_correlated_pairplot(
 
     kde_color : str, default="#7d47bf"
         The color of the kernel density estimates.
+
+    hue : pd.Series, default=None
+        The target data to color the pairplot by.
+
+    cmap : str, default="viridis"
+        The colormap to use for coloring the pairplot.
 
     overlay_correlations : bool, default=True
         If True, the correlation coefficients are overlaid on the upper triangle of
@@ -465,10 +475,15 @@ def plot_correlated_pairplot(
         )
         plt.legend()
 
+    if hue is not None:
+        plot_kws = {"hue": hue, "palette": cmap}
+    else:
+        plot_kws = {"color": scatter_color}
+
     g = sns.pairplot(
         data,
         diag_kind="kde",
-        plot_kws={"color": scatter_color},
+        plot_kws=plot_kws,
         diag_kws={"color": kde_color}
     )
 
@@ -476,6 +491,18 @@ def plot_correlated_pairplot(
         g.map_upper(annotate_correlations)
     g.map_lower(sns.kdeplot, levels=4, color="black")
     g.map_diag(plot_mean)
+
+
+    # Add a color bar if hue is provided
+    if hue is not None:
+        # Create a normalized scalar mappable for the color bar
+        norm = Normalize(vmin=hue.min(), vmax=hue.max())
+        sm = cm.ScalarMappable(norm=norm, cmap=cmap)
+        sm.set_array([])
+
+        g.figure.subplots_adjust(right=0.85)
+        cbar_ax = g.figure.add_axes([0.88, 0.15, 0.02, 0.7])
+        g.figure.colorbar(sm, cax=cbar_ax, label=hue.name)
 
     plt.suptitle(title, y=1.02)
     plt.show()
