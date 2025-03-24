@@ -163,7 +163,7 @@ def plot_zeros(
         yaxis_2_title: str = "Mean BMI"
     ) -> None:
     """Plot the number of zeros in each feature of the dataframe and the mean BMI
-    of the non zero samples.
+    of the non zero features.
 
     Parameters
     ----------
@@ -627,4 +627,75 @@ def plot_correlated_pairplot(
         g.figure.colorbar(sm, cax=cbar_ax, label=hue.name)
 
     plt.suptitle(title, y=1.02)
+    plt.show()
+
+
+def plot_feature_selection_metrics(
+        feature_selection_metrics: pd.DataFrame,
+        shape: tuple,
+        figsize: tuple = (15, 10)
+    ) -> None:
+    """
+    Plot the feature selection method performance by metric.
+
+    Parameters
+    ----------
+    feature_selection_metrics : pd.DataFrame
+        DataFrame containing the feature selection method performance metrics.
+
+    shape: tuple
+        Shape of the plot grid.
+
+    figsize: tuple default = (15, 10)
+        Size of the figure.        
+
+    Returns
+    -------
+    None
+    """
+
+    metrics = feature_selection_metrics.columns[1:]
+
+    k, l = shape
+
+    fig, axes = plt.subplots(k, l, figsize=figsize)
+
+    axes = axes.flatten()
+
+    fig.suptitle("Feature Selection Method Performance by Metric", fontsize=14, y=1.05)
+
+    palette = sns.color_palette(
+        "husl",
+        n_colors=len(feature_selection_metrics["Method"])
+    )
+
+    for i, metric in enumerate(metrics):
+        sns.barplot(
+            data=feature_selection_metrics,
+            x="Method",
+            y=metric,
+            ax=axes[i],
+            palette=palette,
+            edgecolor="black",
+            linewidth=0.5
+        )
+        
+        axes[i].set_title(metric, fontsize=12)
+        axes[i].set_xlabel("")
+        axes[i].set_ylabel("Score", fontsize=10)
+        axes[i].tick_params(axis='x', rotation=45)
+        
+        for p in axes[i].patches:
+            height = p.get_height()
+            axes[i].annotate(
+                f"{height:.2f}",
+                (p.get_x() + p.get_width() / 2., height),
+                ha='center',
+                va='center',
+                xytext=(0, 5),
+                textcoords='offset points',
+                fontsize=9
+            )
+
+    plt.tight_layout()
     plt.show()
