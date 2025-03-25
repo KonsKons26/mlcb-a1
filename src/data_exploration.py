@@ -8,7 +8,12 @@ from IPython.display import display, clear_output
 import seaborn as sns
 import plotly.graph_objects as go
 from scipy.stats import pearsonr, spearmanr, kendalltau
-
+from sklearn.feature_selection import (
+    mutual_info_regression,
+    VarianceThreshold,
+    mutual_info_regression
+)
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 def plot_kde(
         df: pd.Series | pd.DataFrame,
@@ -628,6 +633,63 @@ def plot_correlated_pairplot(
 
     plt.suptitle(title, y=1.02)
     plt.show()
+
+
+def calc_feature_selection_metrics(
+        X: pd.DataFrame,
+        y: pd.Series,
+        method: str  
+    ) -> pd.DataFrame:
+    """Calculate the feature selection method performance metrics.
+
+    Parameters
+    ----------
+    X : pd.DataFrame
+        The feature data.
+
+    y : pd.Series
+        The target data.
+
+    methods : str
+        The feature selection method used.
+
+    Returns
+    -------
+    feature_selection_metrics : pd.DataFrame
+        DataFrame containing the feature selection method performance metrics.
+    """
+
+    def compute_vif(X):
+        if X.shape[1] > 1:
+            return pd.Series(
+                [variance_inflation_factor(X.values, i) for i in range(X.shape[1])],
+                index=X.columns
+            ).mean()
+        else:
+            return 0 
+
+    selector = VarianceThreshold(threshold=0.1)
+    selector.fit(X)
+
+    new_row = pd.DataFrame({
+        "Method": [
+            method
+        ],
+        "Number of Features": [
+            X.shape[1]
+        ],
+        "Mutual Information": [
+            mutual_info_regression(X, y).mean()
+        ],
+        "Variance": [
+            X[X.columns[selector.get_support()]].var().mean()
+        ],
+        "Variance Inflation Factor": [
+            compute_vif(X)
+        ]
+    })
+
+    return new_row
 
 
 def plot_feature_selection_metrics(
