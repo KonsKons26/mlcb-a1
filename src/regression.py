@@ -143,6 +143,7 @@ class Regresssor:
                     ))
                     if scale_data:
                         dump(scaler, os.path.join(
+                            self.models_dir,
                             f"{self.model_type}_{mode}_scaler.joblib"
                         ))
 
@@ -198,6 +199,7 @@ class Regresssor:
         - Returns a dictionary containing the mean squared error, mean absolute
             error, and R-squared score for each fold.
         """
+
         X_val = evaluation_df.drop(columns=target_col)
         y_val = evaluation_df[target_col]
 

@@ -6,36 +6,93 @@ import seaborn as sns
 import plotly.graph_objects as go
 
 
-
 def plot_metrics(
-        metrics: dict,
+        metrics: dict[str, dict[str, list | float]],
+        boxplots: bool = True,
         figsize: tuple = (18, 6),
         models: list = ["ElasticNet", "SVR", "BayesianRidge"],
-        metrics_list: list = ["MAE", "MSE", "R2"]
+        metrics_list: list = ["MAE", "MSE", "R2"],
+        linewidth: float = 2,
+        title_fontsize: int = 16
     ) -> None:
     """
+    Plot metrics with customizable line thickness and title sizes.
+    
+    Parameters
+    ----------
+    metrics: dict[str, dict[str, list | float]]
+        The dictionary containing the metrics per model.
+    boxplots: bool, default = True
+        Whether to use boxplots or barplots.
+    figsize: tuple, default = (18, 6)
+        The size of the plotted figure.
+    models: list, default = ["ElasticNet", "SVR", "BayesianRidge"]
+        The list of models to plot.
+    metrics_list: list, default = ["MAE", "MSE", "R2"]
+        The list of metrics to plot.
+    linewidth: float, default = 2
+        The linewidth of the edges of the boxes/ bars.
+    title_fontsize: int, default = 16
+        The fontsize of the title.
 
+    Returns
+    -------
+    None
+
+    Notes
+    -----
+    - Set boxplots to True if there are many values per metric, if each metric has
+        a single value, set it to False.
     """
 
-    metrics_by_metric = {metric: {model: [] for model in models} for metric in metrics_list}
-
-    # metrics_by_metric = {}
-
+    # Convert the metrics dictionary from {model: {metric: value | values}} to
+    # {metric: {model: value | values}} to plot based on metric
+    metrics_by_metric = {
+        metric: {model: [] for model in models} for metric in metrics_list
+    }
     for model, metrics_dict in metrics.items():
         if model in models:
             for metric, values_list in metrics_dict.items():
                 if metric in metrics_list:
                     metrics_by_metric[metric][model] = values_list
-    
-    fig, axes = plt.subplots( nrows=1, ncols=3, figsize=figsize)
+
+    # Plotting
+    _, axes = plt.subplots(nrows=1, ncols=3, figsize=figsize)
 
     for i, ax in enumerate(axes):
         metric = list(metrics_by_metric.keys())[i]
         values = metrics_by_metric[metric]
-        sns.boxplot(data=pd.DataFrame(values), ax=ax)
-        ax.set_title(f"{metric} by Model")
-        ax.set_xlabel("Model")
-        ax.set_ylabel(metric)
-        ax.grid(True)
+
+        if boxplots:
+            # Boxplot with thicker lines
+            boxplot = sns.boxplot(
+                data=values,
+                ax=ax,
+                color="#2a59a3",
+                linewidth=linewidth
+            )
+            # Make median line thicker
+            for artist in boxplot.artists:
+                artist.set_edgecolor('black')
+                artist.set_linewidth(linewidth)
+        else:
+            # Barplot with thicker lines
+            barplot = sns.barplot(
+                data=values,
+                ax=ax,
+                color="#2a59a3",
+                linewidth=linewidth
+            )
+            # Make outline thicker
+            for patch in barplot.patches:
+                patch.set_edgecolor('black')
+                patch.set_linewidth(linewidth)
+
+        ax.set_title(metric, fontsize=title_fontsize)
+
+        # Make axis lines thicker
+        for spine in ax.spines.values():
+            spine.set_linewidth(linewidth/2)
+
     plt.tight_layout()
     plt.show()
