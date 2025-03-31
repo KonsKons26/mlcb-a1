@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 
 def plot_metrics(
         metrics: dict[str, dict[str, list | float]],
-        boxplots: bool = True,
+        plots: str,
         figsize: tuple = (18, 6),
         models: list = ["ElasticNet", "SVR", "BayesianRidge"],
         metrics_list: list = ["MAE", "MSE", "R2"],
@@ -22,7 +22,7 @@ def plot_metrics(
     ----------
     metrics: dict[str, dict[str, list | float]]
         The dictionary containing the metrics per model.
-    boxplots: bool, default = True
+    plots: str
         Whether to use boxplots or barplots.
     figsize: tuple, default = (18, 6)
         The size of the plotted figure.
@@ -45,6 +45,12 @@ def plot_metrics(
         a single value, set it to False.
     """
 
+    # Check plot called
+    if plots != "boxplot" and plots != "barplot":
+        raise ValueError(
+            "Either set 'plots' to 'boxplot' or 'barplot'."
+        )
+
     # Convert the metrics dictionary from {model: {metric: value | values}} to
     # {metric: {model: value | values}} to plot based on metric
     metrics_by_metric = {
@@ -63,7 +69,7 @@ def plot_metrics(
         metric = list(metrics_by_metric.keys())[i]
         values = metrics_by_metric[metric]
 
-        if boxplots:
+        if plots == "boxplot":
             # Boxplot with thicker lines
             boxplot = sns.boxplot(
                 data=values,
@@ -75,7 +81,7 @@ def plot_metrics(
             for artist in boxplot.artists:
                 artist.set_edgecolor('black')
                 artist.set_linewidth(linewidth)
-        else:
+        elif plots == "barplot":
             # Barplot with thicker lines
             barplot = sns.barplot(
                 data=values,
