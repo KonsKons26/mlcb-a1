@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import (
-    LinearRegression, ElasticNet, BayesianRidge
+    ElasticNet, BayesianRidge
 )
 from sklearn.svm import SVR
 from sklearn.metrics import (
@@ -20,7 +20,6 @@ class Regresssor:
     """
 
     valid_types = {
-        "LinearRegression",
         "ElasticNet",
         "SVR",
         "BayesianRidge"
@@ -128,7 +127,6 @@ class Regresssor:
 
         if mode == "baseline":
                 model_dict = {
-                    "LinearRegression": LinearRegression(),
                     "ElasticNet": ElasticNet(random_state=self.random_state),
                     "SVR": SVR(),
                     "BayesianRidge": BayesianRidge()
@@ -161,7 +159,45 @@ class Regresssor:
             model_name: str = None,
             scaled: bool = True,
             eval_loops: int = 50
-    ):
+        ) -> dict:
+        """Evaluates the model using K-Fold cross-validation.
+        
+        Parameters
+        ----------
+        load_model : bool
+            Whether to load a pre-trained model from disk.
+        evaluation_df : pd.DataFrame
+            The DataFrame containing the evaluation data.
+        target_col : str
+            The name of the target column in the evaluation DataFrame.
+        model_name : str, optional
+            The name of the model to load. Required if `load_model` is True.
+        scaled : bool, default = True
+            Whether the input data was scaled during training.
+
+        Returns
+        -------
+        dict
+            A dictionary containing regression metrics such as mean squared error,
+            mean absolute error, and R-squared score for the model on the evaluation
+            data.
+
+        Raises
+        ------
+        ValueError
+            If `load_model` is True and `model_name` is not provided.
+        AssertionError
+            If `evaluation_df` is not a DataFrame or if `target_col` is not a string.
+
+        Notes
+        -----
+        - The method splits the evaluation data into K folds using `KFold`.
+        - If `load_model` is True, it loads the pre-trained model and scaler (if
+            used) from the specified directory.
+        - If `scaled` is True, it scales the evaluation data using the loaded scaler.
+        - Returns a dictionary containing the mean squared error, mean absolute
+            error, and R-squared score for each fold.
+        """
         X_val = evaluation_df.drop(columns=target_col)
         y_val = evaluation_df[target_col]
 
