@@ -6,8 +6,12 @@ from sklearn.linear_model import (
     LinearRegression, ElasticNet, BayesianRidge
 )
 from sklearn.svm import SVR
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import (
+    mean_squared_error, mean_absolute_error, r2_score
+)
 
+from joblib import dump, load
+import os
 
 
 def baseline_train_test(
@@ -53,9 +57,12 @@ def baseline_wrapper(
         X_train: pd.DataFrame = None,
         X_test: pd.DataFrame = None,
         y_train: pd.Series = None,
-        y_test: pd.Series = None
+        y_test: pd.Series = None,
+        save_models: bool = False,
+        save_path: str = None
 ) -> dict:
-    """Wrapper function that trains and evaluates multiple baseline regression models.
+    """Wrapper function that trains and evaluates multiple baseline regression
+    models.
 
     Parameters
     ----------
@@ -137,8 +144,21 @@ def baseline_wrapper(
             y_train
         )
         mse = mean_squared_error(y_test, y_pred)
+        mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
         metrics[model_name]["MSE"] = mse
+        metrics[model_name]["MAE"] = mae
         metrics[model_name]["R2"] = r2
+
+        if save_models:
+            if not save_path:
+                raise ValueError(
+                    "Please provide a path to save the models."
+                )
+            full_path = os.path.join(
+                save_path,
+                f"{model_name}_baseline.joblib"
+            )
+            dump(model, full_path)
 
     return metrics
