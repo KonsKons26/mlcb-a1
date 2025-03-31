@@ -724,7 +724,11 @@ def plot_feature_selection_metrics(
 
     axes = axes.flatten()
 
-    fig.suptitle("Feature Selection Method Performance by Metric", fontsize=14, y=1.05)
+    fig.suptitle(
+        "Feature Selection Method Performance by Metric",
+        fontsize=14,
+        y=1.05
+    )
 
     palette = sns.color_palette(
         "husl",
