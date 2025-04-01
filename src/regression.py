@@ -16,327 +16,260 @@ from sklearn.feature_selection import (
 )
 from sklearn.utils import resample
 
-from mrmr import mrmr_regression
-
 from joblib import dump, load
 
 
-class Regresssor:
-    """
-
-    """
-
-    VALID_MODEL_TYPES = {
-        "ElasticNet",
-        "SVR",
-        "BayesianRidge"
-    }
-
-    VALID_METRICS ={
-        "RMSE",
-        "MAE",
-        "R2"
-    }
-
-    VALID_MODELS = {
-        "baseline",
-        "feature_selection",
-        "tuning"
-    }
-
-    FEATURE_SELECTION_METHODS = {
-        "VarianceThreshold",
-        "SelectKBest-rRegression",
-        "SelectKBest-fRegression",
-        "mRMR"
-    }        
-
+class Regressor:
 
 
     def __init__(
             self,
             model_type: str,
             dataset: pd.DataFrame,
-            target_col: str,
-            used_metrics: list,
+            target: str,
             models_dir: str,
             random_state: int = 42
         ):
 
-        assert isinstance(model_type, str), "'model_type' must be <str>"
-        assert (
-            model_type in self.VALID_MODEL_TYPES
-        ), f"'model_type' must be one of the following:\n{self.VALID_MODEL_TYPES}"
         self.model_type = model_type
-
-        assert isinstance(dataset, pd.DataFrame), "'dataset' must be <pd.DataFrame>"
-        assert isinstance(target_col, str), "'target_col' must be <str>"
-        self.X = dataset.drop(columns=target_col)
-        self.y = dataset[target_col]
-
-        assert isinstance(used_metrics, list), "'metrics' must be <list>"
-        assert all(
-            isinstance(metric, str) for metric in used_metrics
-        ), "'used_metrics' must be <list> of <str>"
-        assert all(
-            metric in self.VALID_METRICS for metric in used_metrics
-        ), f"'used_metrics' must be one of the following:\n{self.VALID_METRICS}"
-        self.used_metrics = used_metrics
-
-        assert os.path.isdir(models_dir), "'models_dir' does not exist"
+        self.X = dataset.drop(columns=[target])
+        self.y = dataset[target]
         self.models_dir = models_dir
-
-        assert isinstance(random_state, int), "'random_state' must be <int>"
         self.random_state = random_state
+        self.model = None
+        self.metrics = None
 
 
     def train(
             self,
-            mode: str,
-            test_size: float = 0.2,
-            scale_data: bool = True,
-            save_model:bool = False,
-            feature_selection_method: str = None,
-            feature_selection_args: dict = None
-        ) -> dict:
-        """Trains the model based on the specified mode and evaluates its
-        performance.
-            
-        Parameters
-        ----------
-        mode : str
-            The mode of training. Must be one of the valid modes defined in
-            `self.VALID_MODELS`.
-        test_size : float, defaul = 0.2
-            The proportion of the dataset to include in the test split.
-        scale_data : bool, default = True
-            Whether to scale the input data using StandardScaler.
-        save_model : bool, default = False
-            Whether to save the trained model and scaler (if used).
-        feature_selection_method : str, optional
-            The feature selection method to use. Must be one of the valid methods
-            defined in `self.FEATURE_SELECTION_METHODS`.
-        feature_selection_args : dict, optional
-            Additional arguments for the feature selection method.
+            mode: str = "baseline",
+            feature_selection_dict: dict = {},
+            tune_dict: dict = {}
+        ):
 
-        Returns
-        -------
-        dict
-            A dictionary containing regression metrics such as mean squared error,
-            mean absolute error,  and R-squared score for the trained model on the
-            test set.
-        """
-
-        if mode not in self.VALID_MODELS:
-            raise ValueError(
-                f"Mode must be one of the following:\n{self.VALID_MODELS}"
+        # ElasticNet
+        if self.model_type == "ElasticNet":
+            self.model = ElasticNet()
+            self._train_ElasticNet(
+                mode=mode,
+                feature_selection_dict=feature_selection_dict,
+                tune_dict=tune_dict
             )
 
-        # Implementing a baseline model   
+        # SVR
+        if self.model_type == "SVR":
+            self.model = SVR()
+            self._train_SVR(
+                mode=mode,
+                feature_selection_dict=feature_selection_dict,
+                tune_dict=tune_dict
+            )
+
+        # BayesianRidge
+        if self.model_type == "BayesianRidge":
+            self.model = BayesianRidge()
+            self._train_BayesianRidge(
+                mode=mode,
+                feature_selection_dict=feature_selection_dict,
+                tune_dict=tune_dict
+            )
+
+        return self.metrics
+
+
+    def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
         if mode == "baseline":
-            X_train, X_test, y_train, y_test = train_test_split(
-                self.X, self.y, test_size=test_size, random_state=self.random_state
+            self._train_baseline()
+
+        if mode == "feature_selection":
+            self._feature_selection(feature_selection_dict)
+
+        if mode == "tune":
+            pass
+        return
+
+
+    def _train_SVR(self, mode, feature_selection_dict, tune_dict):
+        if mode == "baseline":
+            self._train_baseline()
+
+        if mode == "feature_selection":
+            self._feature_selection(feature_selection_dict)
+
+        if mode == "tune":
+            pass
+        return
+
+
+    def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict):
+        if mode == "baseline":
+            self._train_baseline()
+
+        if mode == "feature_selection":
+            self._feature_selection(feature_selection_dict)
+
+        if mode == "tune":
+            pass
+        return
+
+
+    def evaluate(self):
+        return
+
+
+    def _train_baseline(self):
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X,
+            self.y,
+            test_size=0.2,
+            random_state=self.random_state
+        )
+
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
+
+        self.model.fit(X_train, y_train)
+        y_pred = self.model.predict(X_test)
+        metrics = self._regression_metrics(y_test, y_pred)
+
+        self.metrics = metrics
+
+        return None
+
+
+    def _feature_selection(self, feature_selection_dict):
+        threshold = feature_selection_dict.get("threshold", 0.1)
+        k = feature_selection_dict.get("k", 10)
+        n_folds = feature_selection_dict.get("n_folds", 5)
+
+        selectors = {
+            "VarianceThreshold": VarianceThreshold(threshold=threshold),
+            "SelectKBest-r_regression": SelectKBest(score_func=r_regression, k=k),
+            "SelectKBest-f_regression": SelectKBest(score_func=f_regression, k=k)
+        }
+
+        all_metrics = {
+            "VarianceThreshold": {},
+            "SelectKBest-r_regression": {},
+            "SelectKBest-f_regression": {}
+        }
+
+        # Check every selector and calculate metrics using KFold cross-validation
+        for selector_name, selector in selectors.items():
+            metrics_per_selector = {"RMSE": [], "MAE": [], "R2": [], "features": []}
+
+            kf = KFold(
+                n_splits=n_folds,
+                shuffle=True,
+                random_state=self.random_state
             )
 
-            if scale_data:
+            for train_index, test_index in kf.split(self.X):
+                # Subsets
+                X_train = self.X.iloc[train_index]
+                X_test = self.X.iloc[test_index]
+                y_train = self.y.iloc[train_index]
+                y_test = self.y.iloc[test_index]
+
+                # Standardizartion
                 scaler = StandardScaler()
                 scaler.fit(X_train)
-                X_train = pd.DataFrame(
-                    scaler.transform(X_train), columns=X_train.columns
-                )
-                X_test = pd.DataFrame(
-                    scaler.transform(X_test), columns=X_test.columns
-                )
-                self.scaler = scaler
+                X_train = scaler.transform(X_train)
+                X_test = scaler.transform(X_test)
 
-            model_dict = {
-                "ElasticNet": ElasticNet(random_state=self.random_state),
-                "SVR": SVR(),
-                "BayesianRidge": BayesianRidge()
-            }
-            model = model_dict[self.model_type]
+                # Feature selection
+                selector.fit(X_train, y_train)
+                X_train = selector.transform(X_train)
+                X_test = selector.transform(X_test)
 
-            model.fit(X_train, y_train)
-            y_pred = model.predict(X_test)
+                # Model training and evaluation
+                self.model.fit(X_train, y_train)
+                y_pred = self.model.predict(X_test)
 
-            if save_model:
-                dump(model, os.path.join(
-                    self.models_dir,
-                    f"{self.model_type}_{mode}.joblib"
-                ))
-                if scale_data:
-                    dump(scaler, os.path.join(
-                        self.models_dir,
-                        f"{self.model_type}_{mode}_scaler.joblib"
-                    ))
+                # Store metrics
+                metrics = self._regression_metrics(y_test, y_pred)
+                for metric_name, metric_values in metrics.items():
+                    metrics_per_selector[metric_name].append(metric_values)
 
-            self.model = model
+            all_metrics[selector_name] = metrics_per_selector
+            self.metrics = all_metrics
 
-            return self._regression_metrics(y_pred, y_test)
-        
-        # Implementing feature selection
-        elif mode == "feature_selection":
-            model_dict = {
-                "ElasticNet": ElasticNet(random_state=self.random_state),
-                "SVR": SVR(),
-                "BayesianRidge": BayesianRidge()
-            }
-            model = model_dict[self.model_type]
+        # Train model based on best features
+        best_method = self._get_top_feature_selection_method(all_metrics)
 
-            if feature_selection_method == "VarianceThreshold":
-                threshold = feature_selection_args.get("threshold", 0.1)
-                selector = VarianceThreshold(threshold=threshold)
+        # Feature selection and model training
+        selector = selectors[best_method]
+        selector.fit(self.X, self.y)
+        X_selected = selector.transform(self.X)
+        y_selected = self.y
 
-            elif feature_selection_method == "SelectKBest-rRegression":
-                k = feature_selection_args.get("k", 10)
-                selector = SelectKBest(score_func=r_regression, k=k)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_selected,
+            y_selected,
+            test_size=0.2,
+            random_state=self.random_state
+        )
 
-            elif feature_selection_method == "SelectKBest-fRegression":
-                k = feature_selection_args.get("k", 10)
-                selector = SelectKBest(score_func=f_regression, k=k)
+        X_train = selector.transform(X_train)
+        X_test = selector.transform(X_test)
 
-            elif feature_selection_method == "mRMR":
-                k = feature_selection_args.get("k", 10)
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
 
-            else:
-                raise ValueError(
-                    f"feature_selection_method must be one of the following:\n{
-                        self.FEATURE_SELECTION_METHODS
-                    }"
-                )
+        self.model.fit(X_train, y_train)
+        y_pred = self.model.predict(X_test)
 
-            all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+        metrics = self._regression_metrics(y_test, y_pred)
+        self.metrics = metrics
+        self.metrics["features"] = selector.get_support(indices=True)
+        self.metrics["feature_selection_method"] = best_method
 
-            # KFold CV
-            folds = feature_selection_args.get("folds", 10)
-            kf = KFold(n_splits=folds, shuffle=True, random_state=self.random_state)
-
-            for train_idx, test_idx in kf.split(self.X):
-                X_train = self.X.iloc[train_idx]
-                y_train = self.y.iloc[train_idx]
-                X_test = self.X.iloc[test_idx]
-                y_test = self.y.iloc[test_idx]
-                if scale_data:
-                    scaler = StandardScaler()
-                    scaler.fit(X_train)
-                    X_train = pd.DataFrame(
-                        scaler.transform(X_train), columns=X_train.columns
-                    )
-                    X_test = pd.DataFrame(
-                        scaler.transform(X_test), columns=X_test.columns
-                    )
-                    self.scaler = scaler
-                # else:
-                #     scaler = None
-                #     X_train = pd.DataFrame(X_train, columns=X_train.columns)
-                #     X_test = pd.DataFrame(X_test, columns=X_test.columns)
-                if feature_selection_method == "mRMR":
-                    X_train = mrmr_regression(X_train, y_train, k=k)
-                    X_test = mrmr_regression(X_test, y_test, k=k)
-                else:
-                    X_train = selector.fit_transform(X_train, y_train)
-                    X_test = selector.transform(X_test)
-                model.fit(X_train, y_train)
-                y_pred = model.predict(X_test)
-                metrics = self._regression_metrics(y_pred, y_test)
-                for metric, value in metrics.items():
-                    all_metrics[metric].append(value)
-            if save_model:
-                dump(model, os.path.join(
-                    self.models_dir,
-                    f"{self.model_type}_{mode}.joblib"
-                ))
-                if scale_data:
-                    dump(scaler, os.path.join(
-                        self.models_dir,
-                        f"{self.model_type}_{mode}_scaler.joblib"
-                    ))
-            self.model = model
-
-            # Save best feature names
+        return None
 
 
+    def _get_top_feature_selection_method(self, all_metrics):
+        # Select the method that yields the largest 
+        # mean(R2) / (mean(RMSE) + mean(MAE))
+        all_methods = {
+            "VarianceThreshold": [],
+            "SelectKBest-r_regression": [],
+            "SelectKBest-f_regression": []
+        }
+        for selection_method, metrics in all_metrics.items():
+            rmse = metrics["RMSE"]
+            mae = metrics["MAE"]
+            r2 = metrics["R2"]
+            # debug
+            for rr2 in r2:
+                print(rr2)
+            mean_r2 = sum(r2) / len(r2)
+            mean_rmse = sum(rmse) / len(rmse)
+            mean_mae = sum(mae) / len(mae)
+            all_methods[selection_method] = mean_r2 / (mean_rmse + mean_mae)
 
-            return all_metrics
+        best_method = max(all_methods, key=all_methods.get)
 
-
-    def evaluate(
-            self,
-            load_model: bool,
-            evaluation_df: pd.DataFrame,
-            target_col: str,
-            model_name: str = None,
-            scaled: bool = True,
-            n_bootstraps: int = 100
-        ) -> dict:
-        """Evaluates the model using K-Fold cross-validation.
-        
-        Parameters
-        ----------
-        load_model : bool
-            Whether to load a pre-trained model from disk.
-        evaluation_df : pd.DataFrame
-            The DataFrame containing the evaluation data.
-        target_col : str
-            The name of the target column in the evaluation DataFrame.
-        model_name : str, optional
-            The name of the model to load. Required if `load_model` is True.
-        scaled : bool, default = True
-            Whether the input data was scaled during training.
-        n_bootstraps : int, default = 100
-            The number of bootstrap samples to use for evaluation.
-
-        Returns
-        -------
-        dict
-            A dictionary containing regression metrics such as mean squared error,
-            mean absolute error, and R-squared score for the model on the evaluation
-            data.
-        """
-
-        X_val = evaluation_df.drop(columns=target_col)
-        y_val = evaluation_df[target_col]
-
-        if load_model:
-            model = load(os.path.join(
-                self.models_dir,
-                model_name,
-                ".joblib"
-            ))
-            if scaled:
-                scaler = load(os.path.join(
-                    self.models_dir,
-                    model_name,
-                    "_scaler",
-                    ".joblib"
-                ))
-                X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
-
-        else:
-            model = self.model
-            if scaled and hasattr(self, "scaler"):
-                X_val = pd.DataFrame(
-                    self.scaler.transform(X_val), columns=X_val.columns
-                )
-
-        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
-
-        for _ in range(n_bootstraps):
-            X_sample, y_sample = resample(X_val, y_val)
-            y_pred = model.predict(X_sample)
-            metrics = self._regression_metrics(y_pred, y_sample)
-            for metric, value in metrics.items():
-                all_metrics[metric].append(value)
-
-        return all_metrics
+        return best_method
 
 
-    def _regression_metrics(
-            self,
-            y_pred: pd.Series,
-            y_test: pd.Series
-    ) -> dict:
+    def _tune_model(self):
+        return
+
+
+    def _regression_metrics(self, y_test, y_pred):
         rmse = root_mean_squared_error(y_test, y_pred)
         mae = mean_absolute_error(y_test, y_pred)
         r2 = r2_score(y_test, y_pred)
-        return {"RMSE": rmse, "MAE": mae, "R2": r2}
+        return {"RMSE": [rmse], "MAE": [mae], "R2": [r2]}
+
+
+    def _save_model(self, model_name):
+        return
+
+
+    def _load_model(self, model_name):
+        return
