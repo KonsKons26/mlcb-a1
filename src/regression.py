@@ -37,6 +37,8 @@ class Regressor:
         self.models_dir = models_dir
         self.random_state = random_state
         self.model = None
+        self.scaler = None
+        self.selection = None
         self.metrics = None
 
 
@@ -47,7 +49,9 @@ class Regressor:
             tune_dict: dict = {}
         ):
 
-        model_name = f"{self.model_type}_{mode}.joblib"
+        model_name = f"{self.model_type}_{mode}"
+        scaler_name = model_name + "_scaler.joblib"
+        model_name = model_name + ".joblib"
 
         # ElasticNet
         if self.model_type == "ElasticNet":
@@ -59,6 +63,7 @@ class Regressor:
             )
 
             self._save_model(model_name)
+            self._save_model(scaler_name, scaler=True)
 
         # SVR
         if self.model_type == "SVR":
@@ -70,6 +75,7 @@ class Regressor:
             )
 
             self._save_model(model_name)
+            self._save_model(scaler_name, scaler=True)
 
         # BayesianRidge
         if self.model_type == "BayesianRidge":
@@ -81,11 +87,18 @@ class Regressor:
             )
 
             self._save_model(model_name)
+            self._save_model(scaler_name, scaler=True)
 
         return self.metrics
 
 
-    def evaluate(self):
+    def evaluate(
+            self,
+            model_name: str,
+            evalu_df: pd.DataFrame,
+            target: str,
+            n_bootstrap: int = 1000
+        ):
         return
 
 
@@ -96,15 +109,12 @@ class Regressor:
         if mode == "feature_selection":
             self._feature_selection(feature_selection_dict)
 
-        return None
-
 
     def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
         if mode == "tune":
             self._tune_model(tune_dict)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-        return None
 
 
     def _train_SVR(self, mode, feature_selection_dict, tune_dict):
@@ -112,7 +122,6 @@ class Regressor:
             self._tune_model(tune_dict)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-        return None
 
 
     def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict):
@@ -120,7 +129,6 @@ class Regressor:
             self._tune_model(tune_dict)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-        return None
 
 
     def _train_baseline(self):
@@ -141,8 +149,7 @@ class Regressor:
         metrics = self._regression_metrics(y_test, y_pred)
 
         self.metrics = metrics
-
-        return None
+        self.scaler = scaler
 
 
     def _feature_selection(self, feature_selection_dict):
@@ -210,6 +217,8 @@ class Regressor:
         X_selected = selector.transform(self.X)
         y_selected = self.y
 
+        self.selector = selector
+
         X_train, X_test, y_train, y_test = train_test_split(
             X_selected,
             y_selected,
@@ -222,6 +231,8 @@ class Regressor:
         X_train = scaler.transform(X_train)
         X_test = scaler.transform(X_test)
 
+        self.scaler = scaler
+
         self.model.fit(X_train, y_train)
         y_pred = self.model.predict(X_test)
 
@@ -232,8 +243,6 @@ class Regressor:
             selector.get_support(indices=True)
         ].to_numpy()
         self.metrics["feature_selection_method"] = best_method
-
-        return None
 
 
     def _get_top_feature_selection_method(self):
@@ -269,9 +278,12 @@ class Regressor:
         return {"RMSE": [rmse], "MAE": [mae], "R2": [r2]}
 
 
-    def _save_model(self, model_name):
-        dump(self.model, os.path.join(self.models_dir, model_name))
-        return None
+    def _save_model(self, model_name, scaler=False):
+        if scaler:
+            dump(self.scaler, os.path.join(self.models_dir, model_name))
+        else:
+            dump(self.model, os.path.join(self.models_dir, model_name))
+        
 
 
     def _load_model(self, model_name):
