@@ -85,6 +85,10 @@ class Regressor:
         return self.metrics
 
 
+    def evaluate(self):
+        return
+
+
     def _train_model_no_tune(self, mode, feature_selection_dict):
         if mode == "baseline":
             self._train_baseline()
@@ -117,10 +121,6 @@ class Regressor:
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
         return None
-
-
-    def evaluate(self):
-        return
 
 
     def _train_baseline(self):
@@ -200,10 +200,11 @@ class Regressor:
                     metrics_per_selector[metric_name].extend(metric_values)
 
             all_metrics[selector_name] = metrics_per_selector
-            self.metrics = all_metrics
+
+        self.metrics = all_metrics
 
         # Train model with the best feature selector
-        best_method = self._get_top_feature_selection_method(all_metrics)
+        best_method = self._get_top_feature_selection_method()
         selector = selectors[best_method]
         selector.fit(self.X, self.y)
         X_selected = selector.transform(self.X)
@@ -226,13 +227,16 @@ class Regressor:
 
         metrics = self._regression_metrics(y_test, y_pred)
         self.metrics = metrics
-        self.metrics["features"] = selector.get_support(indices=True)
+        self.metrics["feature_idxs"] = selector.get_support(indices=True)
+        self.metrics["features"] = self.X.columns[
+            selector.get_support(indices=True)
+        ].to_numpy()
         self.metrics["feature_selection_method"] = best_method
 
         return None
 
 
-    def _get_top_feature_selection_method(self, all_metrics):
+    def _get_top_feature_selection_method(self):
         # Select the method that yields the largest 
         # mean(R2) / ((mean(RMSE) + mean(MAE)) / 2)
         all_methods = {
@@ -240,7 +244,7 @@ class Regressor:
             "SelectKBest-r_regression": [],
             "SelectKBest-f_regression": []
         }
-        for selection_method, metrics in all_metrics.items():
+        for selection_method, metrics in self.metrics.items():
             rmse = metrics["RMSE"]
             mae = metrics["MAE"]
             r2 = metrics["R2"]
