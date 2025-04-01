@@ -11,7 +11,7 @@ def plot_metrics(
         plots: str,
         figsize: tuple = (18, 6),
         models: list = ["ElasticNet", "SVR", "BayesianRidge"],
-        metrics_list: list = ["MAE", "MSE", "R2"],
+        metrics_list: list = ["RMSE", "MAE", "R2"],
         linewidth: float = 2,
         title_fontsize: int = 16
     ) -> None:
@@ -28,7 +28,7 @@ def plot_metrics(
         The size of the plotted figure.
     models: list, default = ["ElasticNet", "SVR", "BayesianRidge"]
         The list of models to plot.
-    metrics_list: list, default = ["MAE", "MSE", "R2"]
+    metrics_list: list, default = ["RMSE", "MAE", "R2"]
         The list of metrics to plot.
     linewidth: float, default = 2
         The linewidth of the edges of the boxes/ bars.
@@ -38,11 +38,6 @@ def plot_metrics(
     Returns
     -------
     None
-
-    Notes
-    -----
-    - Set boxplots to True if there are many values per metric, if each metric has
-        a single value, set it to False.
     """
 
     # Check plot called

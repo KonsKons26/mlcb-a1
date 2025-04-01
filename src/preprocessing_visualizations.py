@@ -10,8 +10,7 @@ import plotly.graph_objects as go
 from scipy.stats import pearsonr, spearmanr, kendalltau
 from sklearn.feature_selection import (
     mutual_info_regression,
-    VarianceThreshold,
-    mutual_info_regression
+    VarianceThreshold
 )
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 
