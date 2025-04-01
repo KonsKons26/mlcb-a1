@@ -47,6 +47,8 @@ class Regressor:
             tune_dict: dict = {}
         ):
 
+        model_name = f"{self.model_type}_{mode}.joblib"
+
         # ElasticNet
         if self.model_type == "ElasticNet":
             self.model = ElasticNet()
@@ -55,6 +57,8 @@ class Regressor:
                 feature_selection_dict=feature_selection_dict,
                 tune_dict=tune_dict
             )
+
+            self._save_model(model_name)
 
         # SVR
         if self.model_type == "SVR":
@@ -65,6 +69,8 @@ class Regressor:
                 tune_dict=tune_dict
             )
 
+            self._save_model(model_name)
+
         # BayesianRidge
         if self.model_type == "BayesianRidge":
             self.model = BayesianRidge()
@@ -74,43 +80,43 @@ class Regressor:
                 tune_dict=tune_dict
             )
 
+            self._save_model(model_name)
+
         return self.metrics
 
 
-    def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
+    def _train_model_no_tune(self, mode, feature_selection_dict):
         if mode == "baseline":
             self._train_baseline()
 
         if mode == "feature_selection":
             self._feature_selection(feature_selection_dict)
 
+        return None
+
+
+    def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
         if mode == "tune":
-            pass
-        return
+            self._tune_model(tune_dict)
+        else:
+            self._train_model_no_tune(mode, feature_selection_dict)
+        return None
 
 
     def _train_SVR(self, mode, feature_selection_dict, tune_dict):
-        if mode == "baseline":
-            self._train_baseline()
-
-        if mode == "feature_selection":
-            self._feature_selection(feature_selection_dict)
-
         if mode == "tune":
-            pass
-        return
+            self._tune_model(tune_dict)
+        else:
+            self._train_model_no_tune(mode, feature_selection_dict)
+        return None
 
 
     def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict):
-        if mode == "baseline":
-            self._train_baseline()
-
-        if mode == "feature_selection":
-            self._feature_selection(feature_selection_dict)
-
         if mode == "tune":
-            pass
-        return
+            self._tune_model(tune_dict)
+        else:
+            self._train_model_no_tune(mode, feature_selection_dict)
+        return None
 
 
     def evaluate(self):
@@ -141,7 +147,7 @@ class Regressor:
 
     def _feature_selection(self, feature_selection_dict):
         threshold = feature_selection_dict.get("threshold", 0.1)
-        k = feature_selection_dict.get("k", 10)
+        k = feature_selection_dict.get("k", 20)
         n_folds = feature_selection_dict.get("n_folds", 5)
 
         selectors = {
@@ -191,15 +197,13 @@ class Regressor:
                 # Store metrics
                 metrics = self._regression_metrics(y_test, y_pred)
                 for metric_name, metric_values in metrics.items():
-                    metrics_per_selector[metric_name].append(metric_values)
+                    metrics_per_selector[metric_name].extend(metric_values)
 
             all_metrics[selector_name] = metrics_per_selector
             self.metrics = all_metrics
 
-        # Train model based on best features
+        # Train model with the best feature selector
         best_method = self._get_top_feature_selection_method(all_metrics)
-
-        # Feature selection and model training
         selector = selectors[best_method]
         selector.fit(self.X, self.y)
         X_selected = selector.transform(self.X)
@@ -211,9 +215,6 @@ class Regressor:
             test_size=0.2,
             random_state=self.random_state
         )
-
-        X_train = selector.transform(X_train)
-        X_test = selector.transform(X_test)
 
         scaler = StandardScaler()
         scaler.fit(X_train)
@@ -233,7 +234,7 @@ class Regressor:
 
     def _get_top_feature_selection_method(self, all_metrics):
         # Select the method that yields the largest 
-        # mean(R2) / (mean(RMSE) + mean(MAE))
+        # mean(R2) / ((mean(RMSE) + mean(MAE)) / 2)
         all_methods = {
             "VarianceThreshold": [],
             "SelectKBest-r_regression": [],
@@ -243,20 +244,17 @@ class Regressor:
             rmse = metrics["RMSE"]
             mae = metrics["MAE"]
             r2 = metrics["R2"]
-            # debug
-            for rr2 in r2:
-                print(rr2)
             mean_r2 = sum(r2) / len(r2)
             mean_rmse = sum(rmse) / len(rmse)
             mean_mae = sum(mae) / len(mae)
-            all_methods[selection_method] = mean_r2 / (mean_rmse + mean_mae)
+            all_methods[selection_method] = mean_r2 / ((mean_rmse + mean_mae) / 2)
 
         best_method = max(all_methods, key=all_methods.get)
 
         return best_method
 
 
-    def _tune_model(self):
+    def _tune_model(self, tune_dict):
         return
 
 
@@ -268,8 +266,10 @@ class Regressor:
 
 
     def _save_model(self, model_name):
-        return
+        dump(self.model, os.path.join(self.models_dir, model_name))
+        return None
 
 
     def _load_model(self, model_name):
-        return
+        model = load(os.path.join(self.models_dir, model_name))
+        return model
