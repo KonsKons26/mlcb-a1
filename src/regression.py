@@ -25,15 +25,16 @@ class Regressor:
     def __init__(
             self,
             model_type: str,
-            dataset: pd.DataFrame,
-            target: str,
             models_dir: str,
+            dataset: pd.DataFrame = None,
+            target: str = None,
             random_state: int = 42
         ):
 
         self.model_type = model_type
-        self.X = dataset.drop(columns=[target])
-        self.y = dataset[target]
+        if dataset is not None and target is not None:
+            self.X = dataset.drop(columns=[target])
+            self.y = dataset[target]
         self.models_dir = models_dir
         self.random_state = random_state
         self.model = None
@@ -50,8 +51,6 @@ class Regressor:
         ):
 
         model_name = f"{self.model_type}_{mode}"
-        scaler_name = model_name + "_scaler.joblib"
-        model_name = model_name + ".joblib"
 
         # ElasticNet
         if self.model_type == "ElasticNet":
@@ -63,7 +62,8 @@ class Regressor:
             )
 
             self._save_model(model_name)
-            self._save_model(scaler_name, scaler=True)
+            self._save_scaler(model_name)
+            self._save_features(model_name)
 
         # SVR
         if self.model_type == "SVR":
@@ -75,7 +75,8 @@ class Regressor:
             )
 
             self._save_model(model_name)
-            self._save_model(scaler_name, scaler=True)
+            self._save_scaler(model_name)
+            self._save_features(model_name)
 
         # BayesianRidge
         if self.model_type == "BayesianRidge":
@@ -87,19 +88,43 @@ class Regressor:
             )
 
             self._save_model(model_name)
-            self._save_model(scaler_name, scaler=True)
+            self._save_scaler(model_name)
+            self._save_features(model_name)
 
         return self.metrics
 
 
-    def evaluate(
+    def validate(
             self,
             model_name: str,
-            evalu_df: pd.DataFrame,
+            val_df: pd.DataFrame,
             target: str,
             n_bootstrap: int = 1000
         ):
-        return
+
+        X_val = val_df.drop(columns=[target])
+        y_val = val_df[target]
+
+        if "baseline" in model_name:
+            all_metrics = self._validate_baseline(
+                model_name=model_name,
+                X_val=X_val,
+                y_val=y_val,
+                n_bootstrap=n_bootstrap
+            )
+
+        if "feature_selection" in model_name:
+            all_metrics = self._validate_feature_selection(
+                model_name=model_name,
+                X_val=X_val,
+                y_val=y_val,
+                n_bootstrap=n_bootstrap
+            )
+
+        if "tune" in model_name:
+            all_metrics = self._validate_tune()
+
+        return all_metrics
 
 
     def _train_model_no_tune(self, mode, feature_selection_dict):
@@ -271,6 +296,52 @@ class Regressor:
         return
 
 
+    def _validate_baseline(self, model_name, X_val, y_val, n_bootstrap):
+        model = self._load_model(model_name)
+        scaler = self._load_scaler(model_name)
+
+        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
+
+        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+
+        for _ in range(n_bootstrap):
+            X_sample, y_sample = resample(X_val, y_val)
+
+            y_pred = model.predict(X_sample)
+            metrics = self._regression_metrics(y_sample, y_pred)
+
+            for metric_name, metric_values in metrics.items():
+                all_metrics[metric_name].extend(metric_values)
+
+        return all_metrics
+
+
+    def _validate_feature_selection(self, model_name, X_val, y_val, n_bootstrap):
+        model = self._load_model(model_name)
+        scaler = self._load_scaler(model_name)
+        best_features = self._load_features(model_name)
+
+        X_val = X_val[best_features]
+        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
+
+        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+
+        for _ in range(n_bootstrap):
+            X_sample, y_sample = resample(X_val, y_val)
+
+            y_pred = model.predict(X_sample)
+            metrics = self._regression_metrics(y_sample, y_pred)
+
+            for metric_name, metric_values in metrics.items():
+                all_metrics[metric_name].extend(metric_values)
+
+        return all_metrics
+
+
+    def _validate_tune(self):
+        return
+
+
     def _regression_metrics(self, y_test, y_pred):
         rmse = root_mean_squared_error(y_test, y_pred)
         mae = mean_absolute_error(y_test, y_pred)
@@ -278,14 +349,43 @@ class Regressor:
         return {"RMSE": [rmse], "MAE": [mae], "R2": [r2]}
 
 
-    def _save_model(self, model_name, scaler=False):
-        if scaler:
-            dump(self.scaler, os.path.join(self.models_dir, model_name))
-        else:
-            dump(self.model, os.path.join(self.models_dir, model_name))
-        
+    def _save_model(self, model_name):
+        model_name = model_name + ".joblib"
+        dump(self.model, os.path.join(self.models_dir, model_name))
+
+
+    def _save_scaler(self, scaler_name):
+        scaler_name = scaler_name + "_scaler.joblib"
+        dump(self.scaler, os.path.join(self.models_dir, scaler_name))
+
+
+    def _save_features(self, model_name):
+        features_name = model_name + "_features.txt"
+        with open(
+            os.path.join(self.models_dir, features_name),
+            "w"
+        ) as f:
+            for feature in self.metrics["features"]:
+                f.write(f"{feature}\n")
 
 
     def _load_model(self, model_name):
         model = load(os.path.join(self.models_dir, model_name))
         return model
+
+
+    def _load_scaler(self, scaler_name):
+        scaler_name = scaler_name + "_scaler.joblib"
+        scaler = load(os.path.join(self.models_dir, scaler_name))
+        return scaler
+
+
+    def _load_features(self, model_name):
+        features_name = model_name + "_features.txt"
+        with open(
+            os.path.join(self.models_dir, features_name),
+            "r"
+        ) as f:
+            features = f.readlines()
+        features = [feature.strip() for feature in features]
+        return features
