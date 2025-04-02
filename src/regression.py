@@ -2,7 +2,9 @@ import os
 
 import pandas as pd
 
-from sklearn.model_selection import train_test_split, KFold
+import numpy as np
+
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import (
     ElasticNet, BayesianRidge
@@ -136,22 +138,55 @@ class Regressor:
 
 
     def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
+        grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            self._tune_model(tune_dict)
+            param_grid = {
+                "alpha": np.linspace(0.1, 1.0, grid_size),
+                "l1_ratio": np.linspace(0.0, 1.0, grid_size),
+                "max_iter": [1000],
+                "tol": [0.001]
+            }
+            param_grid = tune_dict.get("param_grid", {})
+            n_folds = tune_dict.get("n_folds", 5)
+            self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
 
     def _train_SVR(self, mode, feature_selection_dict, tune_dict):
+        grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            self._tune_model(tune_dict)
+            param_grid = {
+                "C": np.linspace(0.1, 1.0, grid_size),
+                "epsilon": np.linspace(0.0, 1.0, grid_size),
+                "kernel": ["linear", "poly", "rbf"],
+                "gamma": ["scale", "auto"],
+                "degree": [2, 3, 4],
+                "coef0": np.linspace(0.0, 1.0, grid_size),
+                "max_iter": [1000],
+                "tol": [0.001]
+            }
+            param_grid = tune_dict.get("param_grid", {})
+            n_folds = tune_dict.get("n_folds", 5)
+            self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
 
     def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict):
+        grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            self._tune_model(tune_dict)
+            param_grid = {
+                "alpha_1": np.linspace(1e-6, 1e-3, grid_size),
+                "alpha_2": np.linspace(1e-6, 1e-3, grid_size),
+                "lambda_1": np.linspace(1e-6, 1e-3, grid_size),
+                "lambda_2": np.linspace(1e-6, 1e-3, grid_size),
+                "n_iter": [1000],
+                "tol": [0.001]
+            }
+            param_grid = tune_dict.get("param_grid", {})
+            n_folds = tune_dict.get("n_folds", 5)
+            self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
@@ -175,6 +210,7 @@ class Regressor:
 
         self.metrics = metrics
         self.scaler = scaler
+        self.metrics["features"] = self.X.columns.to_numpy()
 
 
     def _feature_selection(self, feature_selection_dict):
@@ -263,10 +299,10 @@ class Regressor:
 
         metrics = self._regression_metrics(y_test, y_pred)
         self.metrics = metrics
-        self.metrics["feature_idxs"] = selector.get_support(indices=True)
         self.metrics["features"] = self.X.columns[
             selector.get_support(indices=True)
         ].to_numpy()
+        self.metrics["feature_idxs"] = selector.get_support(indices=True)
         self.metrics["feature_selection_method"] = best_method
 
 
@@ -292,8 +328,45 @@ class Regressor:
         return best_method
 
 
-    def _tune_model(self, tune_dict):
-        return
+    def _tune_model(self, param_grid, n_folds):
+        best_features = self._load_features(self.model_type)
+        X = self.X[best_features]
+        y = self.y
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.2,
+            random_state=self.random_state
+        )
+
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
+        self.scaler = scaler
+
+        grid_search = GridSearchCV(
+            estimator=self.model,
+            param_grid=param_grid,
+            scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
+            refit="r2",
+            cv=n_folds,
+            n_jobs=-1
+        )
+        grid_search.fit(X_train, y_train)
+        best_params = grid_search.best_params_
+        best_score = grid_search.best_score_
+        best_model = grid_search.best_estimator_
+
+        self.model = best_model
+        y_pred = self.model.predict(X_test)
+
+        self.metrics = self._regression_metrics(y_test, y_pred)
+        self.metrics["best_params"] = best_params
+        self.metrics["best_score"] = best_score
+        self.metrics["features"] = best_features
+        self.metrics["feature_idxs"] = self._load_features(self.model_type)
 
 
     def _validate_baseline(self, model_name, X_val, y_val, n_bootstrap):
@@ -343,10 +416,11 @@ class Regressor:
 
 
     def _regression_metrics(self, y_test, y_pred):
-        rmse = root_mean_squared_error(y_test, y_pred)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-        return {"RMSE": [rmse], "MAE": [mae], "R2": [r2]}
+        return {
+            "RMSE": root_mean_squared_error(y_test, y_pred),
+            "MAE": mean_absolute_error(y_test, y_pred),
+            "R2": r2_score(y_test, y_pred)
+        }
 
 
     def _save_model(self, model_name):
@@ -361,10 +435,7 @@ class Regressor:
 
     def _save_features(self, model_name):
         features_name = model_name + "_features.txt"
-        with open(
-            os.path.join(self.models_dir, features_name),
-            "w"
-        ) as f:
+        with open(os.path.join(self.models_dir, features_name), "w") as f:
             for feature in self.metrics["features"]:
                 f.write(f"{feature}\n")
 
@@ -382,10 +453,7 @@ class Regressor:
 
     def _load_features(self, model_name):
         features_name = model_name + "_features.txt"
-        with open(
-            os.path.join(self.models_dir, features_name),
-            "r"
-        ) as f:
+        with open(os.path.join(self.models_dir, features_name), "r") as f:
             features = f.readlines()
         features = [feature.strip() for feature in features]
         return features
