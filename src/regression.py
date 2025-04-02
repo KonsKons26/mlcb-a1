@@ -534,7 +534,9 @@ def pipeline(
     all_validation_metrics = {}
 
     for model_type in model_types:
-        print("Running model: ", model_type)
+        print("--------------------")
+        print(f"{model_type:^20}")
+        print("--------------------")
 
         all_training_metrics[model_type] = {}
         all_validation_metrics[model_type] = {}
@@ -547,14 +549,15 @@ def pipeline(
         )
 
         for mode in modes:
-            print("Running mode: ", mode)
-            print("Training")
+            print(f"{mode:^20}")
+            print("--------------------")
+            print("Training... ", end="")
             regressor.train(mode=mode)
             metrics = regressor.metrics
             all_training_metrics[model_type][mode] = metrics
             print("Training completed")
 
-            print("Validating")
+            print("Validating... ", end="")
             regressor.validate(
                 model_name=model_type,
                 mode=mode,
