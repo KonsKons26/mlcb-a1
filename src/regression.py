@@ -65,7 +65,6 @@ class Regressor:
 
             self._save_model(model_name)
             self._save_scaler(model_name)
-            self._save_features(model_name)
 
         # SVR
         if self.model_type == "SVR":
@@ -78,7 +77,6 @@ class Regressor:
 
             self._save_model(model_name)
             self._save_scaler(model_name)
-            self._save_features(model_name)
 
         # BayesianRidge
         if self.model_type == "BayesianRidge":
@@ -91,7 +89,6 @@ class Regressor:
 
             self._save_model(model_name)
             self._save_scaler(model_name)
-            self._save_features(model_name)
 
         return self.metrics
 
@@ -99,15 +96,18 @@ class Regressor:
     def validate(
             self,
             model_name: str,
+            mode: str,
             val_df: pd.DataFrame,
             target: str,
             n_bootstrap: int = 1000
         ):
 
+        model_name = f"{model_name}_{mode}"
+
         X_val = val_df.drop(columns=[target])
         y_val = val_df[target]
 
-        if "baseline" in model_name:
+        if mode == "baseline":
             all_metrics = self._validate_baseline(
                 model_name=model_name,
                 X_val=X_val,
@@ -115,7 +115,7 @@ class Regressor:
                 n_bootstrap=n_bootstrap
             )
 
-        if "feature_selection" in model_name:
+        if mode == "feature_selection":
             all_metrics = self._validate_feature_selection(
                 model_name=model_name,
                 X_val=X_val,
@@ -123,10 +123,37 @@ class Regressor:
                 n_bootstrap=n_bootstrap
             )
 
-        if "tune" in model_name:
-            all_metrics = self._validate_tune()
+        if mode == "tune":
+            all_metrics = self._validate_tune(
+                model_name=model_name,
+                X_val=X_val,
+                y_val=y_val,
+                n_bootstrap=n_bootstrap
+            )
 
         return all_metrics
+
+
+    def _train_baseline(self):
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.X,
+            self.y,
+            test_size=0.2,
+            random_state=self.random_state
+        )
+
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
+
+        self.model.fit(X_train, y_train)
+        y_pred = self.model.predict(X_test)
+        metrics = self._regression_metrics(y_test, y_pred)
+
+        self.metrics = metrics
+        self.scaler = scaler
+        self.metrics["features"] = self.X.columns.to_numpy()
 
 
     def _train_model_no_tune(self, mode, feature_selection_dict):
@@ -135,6 +162,46 @@ class Regressor:
 
         if mode == "feature_selection":
             self._feature_selection(feature_selection_dict)
+
+
+    def _tune_model(self, param_grid, n_folds):
+        best_features = self._load_features(self.model_type)
+        X = self.X[best_features]
+        y = self.y
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.2,
+            random_state=self.random_state
+        )
+
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_test = scaler.transform(X_test)
+        self.scaler = scaler
+
+        grid_search = GridSearchCV(
+            estimator=self.model,
+            param_grid=param_grid,
+            scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
+            refit="r2",
+            cv=n_folds,
+            n_jobs=-1
+        )
+        grid_search.fit(X_train, y_train)
+        best_hyperparameters = grid_search.best_params_
+        best_score = grid_search.best_score_
+        best_model = grid_search.best_estimator_
+
+        self.model = best_model
+        y_pred = self.model.predict(X_test)
+
+        self.metrics = self._regression_metrics(y_test, y_pred)
+        self.metrics["best_hyperparameters"] = best_hyperparameters
+        self.metrics["best_score"] = best_score
+        self.metrics["features"] = best_features
 
 
     def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
@@ -189,28 +256,6 @@ class Regressor:
             self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-
-
-    def _train_baseline(self):
-        X_train, X_test, y_train, y_test = train_test_split(
-            self.X,
-            self.y,
-            test_size=0.2,
-            random_state=self.random_state
-        )
-
-        scaler = StandardScaler()
-        scaler.fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test = scaler.transform(X_test)
-
-        self.model.fit(X_train, y_train)
-        y_pred = self.model.predict(X_test)
-        metrics = self._regression_metrics(y_test, y_pred)
-
-        self.metrics = metrics
-        self.scaler = scaler
-        self.metrics["features"] = self.X.columns.to_numpy()
 
 
     def _feature_selection(self, feature_selection_dict):
@@ -305,6 +350,8 @@ class Regressor:
         self.metrics["feature_idxs"] = selector.get_support(indices=True)
         self.metrics["feature_selection_method"] = best_method
 
+        self._save_features(self.model_type)
+
 
     def _get_top_feature_selection_method(self):
         # Select the method that yields the largest 
@@ -326,47 +373,6 @@ class Regressor:
         best_method = max(all_methods, key=all_methods.get)
 
         return best_method
-
-
-    def _tune_model(self, param_grid, n_folds):
-        best_features = self._load_features(self.model_type)
-        X = self.X[best_features]
-        y = self.y
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=0.2,
-            random_state=self.random_state
-        )
-
-        scaler = StandardScaler()
-        scaler.fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test = scaler.transform(X_test)
-        self.scaler = scaler
-
-        grid_search = GridSearchCV(
-            estimator=self.model,
-            param_grid=param_grid,
-            scoring=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-            refit="r2",
-            cv=n_folds,
-            n_jobs=-1
-        )
-        grid_search.fit(X_train, y_train)
-        best_params = grid_search.best_params_
-        best_score = grid_search.best_score_
-        best_model = grid_search.best_estimator_
-
-        self.model = best_model
-        y_pred = self.model.predict(X_test)
-
-        self.metrics = self._regression_metrics(y_test, y_pred)
-        self.metrics["best_params"] = best_params
-        self.metrics["best_score"] = best_score
-        self.metrics["features"] = best_features
-        self.metrics["feature_idxs"] = self._load_features(self.model_type)
 
 
     def _validate_baseline(self, model_name, X_val, y_val, n_bootstrap):
@@ -392,7 +398,7 @@ class Regressor:
     def _validate_feature_selection(self, model_name, X_val, y_val, n_bootstrap):
         model = self._load_model(model_name)
         scaler = self._load_scaler(model_name)
-        best_features = self._load_features(model_name)
+        best_features = self._load_features(model_name.split("_")[0])
 
         X_val = X_val[best_features]
         X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
@@ -411,15 +417,33 @@ class Regressor:
         return all_metrics
 
 
-    def _validate_tune(self):
-        return
+    def _validate_tune(self, model_name, X_val, y_val, n_bootstrap):
+        model = self._load_model(model_name)
+        scaler = self._load_scaler(model_name)
+        best_features = self._load_features(model_name.split("_")[0])
+
+        X_val = X_val[best_features]
+        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
+
+        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+
+        for _ in range(n_bootstrap):
+            X_sample, y_sample = resample(X_val, y_val)
+
+            y_pred = model.predict(X_sample)
+            metrics = self._regression_metrics(y_sample, y_pred)
+
+            for metric_name, metric_values in metrics.items():
+                all_metrics[metric_name].extend(metric_values)
+
+        return all_metrics
 
 
     def _regression_metrics(self, y_test, y_pred):
         return {
-            "RMSE": root_mean_squared_error(y_test, y_pred),
-            "MAE": mean_absolute_error(y_test, y_pred),
-            "R2": r2_score(y_test, y_pred)
+            "RMSE": [root_mean_squared_error(y_test, y_pred)],
+            "MAE": [mean_absolute_error(y_test, y_pred)],
+            "R2": [r2_score(y_test, y_pred)]
         }
 
 
@@ -441,6 +465,7 @@ class Regressor:
 
 
     def _load_model(self, model_name):
+        model_name = model_name + ".joblib"
         model = load(os.path.join(self.models_dir, model_name))
         return model
 
@@ -452,8 +477,73 @@ class Regressor:
 
 
     def _load_features(self, model_name):
-        features_name = model_name + "_features.txt"
+        features_name = f"{model_name}_features.txt"
         with open(os.path.join(self.models_dir, features_name), "r") as f:
             features = f.readlines()
         features = [feature.strip() for feature in features]
         return features
+
+
+
+def pipeline(
+        models_dir: str,
+        dataset_dir: str,
+        target_col: str = "BMI",
+        model_types: list = ["ElasticNet", "SVR", "BayesianRidge"],
+        modes: list = ["baseline", "feature_selection", "tune"],
+
+    ) -> dict:
+
+    print("----------------")
+    print("Running pipeline")
+    print("----------------\n")
+
+    development_dataset_full_path = os.path.join(dataset_dir, "development_final.csv")
+    validation_dataset_full_path = os.path.join(dataset_dir, "validation_final.csv")
+
+    development_dataset = pd.read_csv(development_dataset_full_path, index_col=0)
+    validation_dataset = pd.read_csv(validation_dataset_full_path, index_col=0)
+
+    all_training_metrics = {}
+    all_validation_metrics = {}
+
+    for model_type in model_types:
+        print("Running model: ", model_type)
+
+        all_training_metrics[model_type] = {}
+        all_validation_metrics[model_type] = {}
+
+        regressor = Regressor(
+            model_type=model_type,
+            models_dir=models_dir,
+            dataset=development_dataset,
+            target=target_col
+        )
+
+        for mode in modes:
+            print("Running mode: ", mode)
+            print("Training")
+            regressor.train(mode=mode)
+            metrics = regressor.metrics
+            all_training_metrics[model_type][mode] = metrics
+            print("Training completed")
+            print(all_training_metrics)
+
+            print("Validating")
+            regressor.validate(
+                model_name=model_type,
+                mode=mode,
+                val_df=validation_dataset,
+                target=target_col
+            )
+            metrics = regressor.metrics
+            all_validation_metrics[model_type][mode] = metrics
+            print("Validation completed")
+
+            print(all_validation_metrics)
+            print("\n")
+
+    print("------------------")
+    print("Pipeline completed")
+    print("------------------\n")
+    return {"training": all_training_metrics, "validation": all_validation_metrics}
