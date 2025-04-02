@@ -134,6 +134,14 @@ class Regressor:
         return all_metrics
 
 
+    def _train_model_no_tune(self, mode, feature_selection_dict):
+        if mode == "baseline":
+            self._train_baseline()
+
+        if mode == "feature_selection":
+            self._feature_selection(feature_selection_dict)
+
+
     def _train_baseline(self):
         X_train, X_test, y_train, y_test = train_test_split(
             self.X,
@@ -144,8 +152,14 @@ class Regressor:
 
         scaler = StandardScaler()
         scaler.fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test = scaler.transform(X_test)
+        X_train = pd.DataFrame(
+            scaler.transform(X_train),
+            columns=X_train.columns
+        )
+        X_test = pd.DataFrame(
+            scaler.transform(X_test),
+            columns=X_test.columns
+        )
 
         self.model.fit(X_train, y_train)
         y_pred = self.model.predict(X_test)
@@ -156,12 +170,112 @@ class Regressor:
         self.metrics["features"] = self.X.columns.to_numpy()
 
 
-    def _train_model_no_tune(self, mode, feature_selection_dict):
-        if mode == "baseline":
-            self._train_baseline()
+    def _feature_selection(self, feature_selection_dict):
+        threshold = feature_selection_dict.get("threshold", 0.1)
+        k = feature_selection_dict.get("k", 20)
+        n_folds = feature_selection_dict.get("n_folds", 5)
 
-        if mode == "feature_selection":
-            self._feature_selection(feature_selection_dict)
+        selectors = {
+            "VarianceThreshold": VarianceThreshold(threshold=threshold),
+            "SelectKBest-r_regression": SelectKBest(score_func=r_regression, k=k),
+            "SelectKBest-f_regression": SelectKBest(score_func=f_regression, k=k)
+        }
+
+        all_metrics = {
+            "VarianceThreshold": {},
+            "SelectKBest-r_regression": {},
+            "SelectKBest-f_regression": {}
+        }
+
+        # Check every selector and calculate metrics using KFold cross-validation
+        for selector_name, selector in selectors.items():
+            metrics_per_selector = {"RMSE": [], "MAE": [], "R2": [], "features": []}
+
+            kf = KFold(
+                n_splits=n_folds,
+                shuffle=True,
+                random_state=self.random_state
+            )
+
+            for train_index, test_index in kf.split(self.X):
+                # Subsets
+                X_train = self.X.iloc[train_index]
+                X_test = self.X.iloc[test_index]
+                y_train = self.y.iloc[train_index]
+                y_test = self.y.iloc[test_index]
+
+                # Standardizartion
+                scaler = StandardScaler()
+                scaler.fit(X_train)
+                X_train = pd.DataFrame(
+                    scaler.transform(X_train),
+                    columns=X_train.columns
+                )
+                X_test = pd.DataFrame(
+                    scaler.transform(X_test),
+                    columns=X_test.columns
+                )
+
+                # Feature selection
+                selector.fit(X_train, y_train)
+                X_train = selector.transform(X_train)
+                X_test = selector.transform(X_test)
+
+                # Model training and evaluation
+                self.model.fit(X_train, y_train)
+                y_pred = self.model.predict(X_test)
+
+                # Store metrics
+                metrics = self._regression_metrics(y_test, y_pred)
+                for metric_name, metric_values in metrics.items():
+                    metrics_per_selector[metric_name].extend(metric_values)
+
+            all_metrics[selector_name] = metrics_per_selector
+
+        self.metrics = all_metrics
+
+        # Train model with the best feature selector
+        best_method = self._get_top_feature_selection_method()
+        selector = selectors[best_method]
+        selector.fit(self.X, self.y)
+        X_selected = selector.transform(self.X)
+        y_selected = self.y
+
+        cols = selector.get_support(indices=True)
+        X_selected = pd.DataFrame(X_selected, columns=self.X.columns[cols])
+
+        self.selector = selector
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_selected,
+            y_selected,
+            test_size=0.2,
+            random_state=self.random_state
+        )
+
+        scaler = StandardScaler()
+        scaler.fit(X_train)
+        X_train = pd.DataFrame(
+            scaler.transform(X_train),
+            columns=X_train.columns
+        )
+        X_test = pd.DataFrame(
+            scaler.transform(X_test),
+            columns=X_train.columns
+        )
+
+        self.scaler = scaler
+
+        self.model.fit(X_train, y_train)
+        y_pred = self.model.predict(X_test)
+
+        metrics = self._regression_metrics(y_test, y_pred)
+        self.metrics = metrics
+        self.metrics["features"] = X_selected.columns.to_numpy()
+        self.metrics["feature_idxs"] = selector.get_support(indices=True)
+        self.metrics["feature_selection_method"] = best_method
+
+        self._save_features(self.model_type)
 
 
     def _tune_model(self, param_grid, n_folds):
@@ -178,8 +292,15 @@ class Regressor:
 
         scaler = StandardScaler()
         scaler.fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test = scaler.transform(X_test)
+        X_train = pd.DataFrame(
+            scaler.transform(X_train),
+            columns=best_features
+        )
+        X_test = pd.DataFrame(
+            scaler.transform(X_test),
+            columns=best_features
+        )
+
         self.scaler = scaler
 
         grid_search = GridSearchCV(
@@ -256,101 +377,6 @@ class Regressor:
             self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-
-
-    def _feature_selection(self, feature_selection_dict):
-        threshold = feature_selection_dict.get("threshold", 0.1)
-        k = feature_selection_dict.get("k", 20)
-        n_folds = feature_selection_dict.get("n_folds", 5)
-
-        selectors = {
-            "VarianceThreshold": VarianceThreshold(threshold=threshold),
-            "SelectKBest-r_regression": SelectKBest(score_func=r_regression, k=k),
-            "SelectKBest-f_regression": SelectKBest(score_func=f_regression, k=k)
-        }
-
-        all_metrics = {
-            "VarianceThreshold": {},
-            "SelectKBest-r_regression": {},
-            "SelectKBest-f_regression": {}
-        }
-
-        # Check every selector and calculate metrics using KFold cross-validation
-        for selector_name, selector in selectors.items():
-            metrics_per_selector = {"RMSE": [], "MAE": [], "R2": [], "features": []}
-
-            kf = KFold(
-                n_splits=n_folds,
-                shuffle=True,
-                random_state=self.random_state
-            )
-
-            for train_index, test_index in kf.split(self.X):
-                # Subsets
-                X_train = self.X.iloc[train_index]
-                X_test = self.X.iloc[test_index]
-                y_train = self.y.iloc[train_index]
-                y_test = self.y.iloc[test_index]
-
-                # Standardizartion
-                scaler = StandardScaler()
-                scaler.fit(X_train)
-                X_train = scaler.transform(X_train)
-                X_test = scaler.transform(X_test)
-
-                # Feature selection
-                selector.fit(X_train, y_train)
-                X_train = selector.transform(X_train)
-                X_test = selector.transform(X_test)
-
-                # Model training and evaluation
-                self.model.fit(X_train, y_train)
-                y_pred = self.model.predict(X_test)
-
-                # Store metrics
-                metrics = self._regression_metrics(y_test, y_pred)
-                for metric_name, metric_values in metrics.items():
-                    metrics_per_selector[metric_name].extend(metric_values)
-
-            all_metrics[selector_name] = metrics_per_selector
-
-        self.metrics = all_metrics
-
-        # Train model with the best feature selector
-        best_method = self._get_top_feature_selection_method()
-        selector = selectors[best_method]
-        selector.fit(self.X, self.y)
-        X_selected = selector.transform(self.X)
-        y_selected = self.y
-
-        self.selector = selector
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_selected,
-            y_selected,
-            test_size=0.2,
-            random_state=self.random_state
-        )
-
-        scaler = StandardScaler()
-        scaler.fit(X_train)
-        X_train = scaler.transform(X_train)
-        X_test = scaler.transform(X_test)
-
-        self.scaler = scaler
-
-        self.model.fit(X_train, y_train)
-        y_pred = self.model.predict(X_test)
-
-        metrics = self._regression_metrics(y_test, y_pred)
-        self.metrics = metrics
-        self.metrics["features"] = self.X.columns[
-            selector.get_support(indices=True)
-        ].to_numpy()
-        self.metrics["feature_idxs"] = selector.get_support(indices=True)
-        self.metrics["feature_selection_method"] = best_method
-
-        self._save_features(self.model_type)
 
 
     def _get_top_feature_selection_method(self):
@@ -527,7 +553,6 @@ def pipeline(
             metrics = regressor.metrics
             all_training_metrics[model_type][mode] = metrics
             print("Training completed")
-            print(all_training_metrics)
 
             print("Validating")
             regressor.validate(
@@ -539,8 +564,6 @@ def pipeline(
             metrics = regressor.metrics
             all_validation_metrics[model_type][mode] = metrics
             print("Validation completed")
-
-            print(all_validation_metrics)
             print("\n")
 
     print("------------------")
