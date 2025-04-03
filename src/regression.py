@@ -49,7 +49,8 @@ class Regressor:
             self,
             mode: str = "baseline",
             feature_selection_dict: dict = {},
-            tune_dict: dict = {}
+            tune_dict: dict = {},
+            save_model: bool = True
         ):
 
         model_name = f"{self.model_type}_{mode}"
@@ -63,8 +64,9 @@ class Regressor:
                 tune_dict=tune_dict
             )
 
-            self._save_model(model_name)
-            self._save_scaler(model_name)
+            if save_model:
+                self._save_model(model_name)
+                self._save_scaler(model_name)
 
         # SVR
         if self.model_type == "SVR":
@@ -75,8 +77,9 @@ class Regressor:
                 tune_dict=tune_dict
             )
 
-            self._save_model(model_name)
-            self._save_scaler(model_name)
+            if save_model:
+                self._save_model(model_name)
+                self._save_scaler(model_name)
 
         # BayesianRidge
         if self.model_type == "BayesianRidge":
@@ -87,8 +90,9 @@ class Regressor:
                 tune_dict=tune_dict
             )
 
-            self._save_model(model_name)
-            self._save_scaler(model_name)
+            if save_model:
+                self._save_model(model_name)
+                self._save_scaler(model_name)
 
         return self.metrics
 
@@ -167,12 +171,11 @@ class Regressor:
 
         self.metrics = metrics
         self.scaler = scaler
-        self.metrics["features"] = self.X.columns.to_numpy()
 
 
     def _feature_selection(self, feature_selection_dict):
         threshold = feature_selection_dict.get("threshold", 0.1)
-        k = feature_selection_dict.get("k", 20)
+        k = feature_selection_dict.get("k", 15)
         n_folds = feature_selection_dict.get("n_folds", 5)
 
         selectors = {
@@ -312,6 +315,7 @@ class Regressor:
             n_jobs=-1
         )
         grid_search.fit(X_train, y_train)
+
         best_hyperparameters = grid_search.best_params_
         best_score = grid_search.best_score_
         best_model = grid_search.best_estimator_
@@ -328,13 +332,15 @@ class Regressor:
     def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
         grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            param_grid = {
-                "alpha": np.linspace(0.1, 1.0, grid_size),
-                "l1_ratio": np.linspace(0.0, 1.0, grid_size),
-                "max_iter": [1000],
-                "tol": [0.001]
-            }
-            param_grid = tune_dict.get("param_grid", {})
+            if tune_dict.get("param_grid") is None:
+                param_grid = {
+                    "alpha": np.linspace(0.1, 1.0, grid_size),
+                    "l1_ratio": np.linspace(0.1, 1.0, grid_size),
+                    "max_iter": [1000, 2000, 5000],
+                    "tol": [1e-3, 1e-4, 1e-5]
+                }
+            else:
+                param_grid = tune_dict.get("param_grid", {})
             n_folds = tune_dict.get("n_folds", 5)
             self._tune_model(param_grid, n_folds)
         else:
@@ -344,17 +350,19 @@ class Regressor:
     def _train_SVR(self, mode, feature_selection_dict, tune_dict):
         grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            param_grid = {
-                "C": np.linspace(0.1, 1.0, grid_size),
-                "epsilon": np.linspace(0.0, 1.0, grid_size),
-                "kernel": ["linear", "poly", "rbf"],
-                "gamma": ["scale", "auto"],
-                "degree": [2, 3, 4],
-                "coef0": np.linspace(0.0, 1.0, grid_size),
-                "max_iter": [1000],
-                "tol": [0.001]
-            }
-            param_grid = tune_dict.get("param_grid", {})
+            if tune_dict.get("param_grid") is None:
+                param_grid = {
+                    "C": np.linspace(0.1, 1.0, grid_size),
+                    "epsilon": np.linspace(0.0, 1.0, grid_size),
+                    "kernel": ["linear", "poly", "rbf"],
+                    "gamma": ["scale", "auto"],
+                    "degree": [2, 3, 4],
+                    "coef0": np.linspace(0.0, 1.0, grid_size),
+                    "max_iter": [1000, 2000, 5000],
+                    "tol": [1e-3, 1e-4, 1e-5]
+                }
+            else:
+                param_grid = tune_dict.get("param_grid", {})
             n_folds = tune_dict.get("n_folds", 5)
             self._tune_model(param_grid, n_folds)
         else:
@@ -364,15 +372,17 @@ class Regressor:
     def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict):
         grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
-            param_grid = {
-                "alpha_1": np.linspace(1e-6, 1e-3, grid_size),
-                "alpha_2": np.linspace(1e-6, 1e-3, grid_size),
-                "lambda_1": np.linspace(1e-6, 1e-3, grid_size),
-                "lambda_2": np.linspace(1e-6, 1e-3, grid_size),
-                "n_iter": [1000],
-                "tol": [0.001]
-            }
-            param_grid = tune_dict.get("param_grid", {})
+            if tune_dict.get("param_grid") is None:
+                param_grid = {
+                    "alpha_1": np.linspace(1e-6, 1e-3, grid_size),
+                    "alpha_2": np.linspace(1e-6, 1e-3, grid_size),
+                    "lambda_1": np.linspace(1e-6, 1e-3, grid_size),
+                    "lambda_2": np.linspace(1e-6, 1e-3, grid_size),
+                    "n_iter": [1000, 2000, 5000],
+                    "tol": [1e-3, 1e-4, 1e-5]
+                }
+            else:
+                param_grid = tune_dict.get("param_grid", {})
             n_folds = tune_dict.get("n_folds", 5)
             self._tune_model(param_grid, n_folds)
         else:
@@ -517,7 +527,7 @@ def pipeline(
         target_col: str = "BMI",
         model_types: list = ["ElasticNet", "SVR", "BayesianRidge"],
         modes: list = ["baseline", "feature_selection", "tune"],
-
+        save_model: bool = True
     ) -> dict:
 
     print("----------------")
@@ -536,7 +546,6 @@ def pipeline(
     for model_type in model_types:
         print("--------------------")
         print(f"{model_type:^20}")
-        print("--------------------")
 
         all_training_metrics[model_type] = {}
         all_validation_metrics[model_type] = {}
@@ -549,10 +558,11 @@ def pipeline(
         )
 
         for mode in modes:
+            print("--------------------")
             print(f"{mode:^20}")
             print("--------------------")
             print("Training... ", end="")
-            regressor.train(mode=mode)
+            regressor.train(mode=mode, save_model=save_model)
             metrics = regressor.metrics
             all_training_metrics[model_type][mode] = metrics
             print("Training completed")
@@ -567,9 +577,8 @@ def pipeline(
             metrics = regressor.metrics
             all_validation_metrics[model_type][mode] = metrics
             print("Validation completed")
-            print("\n")
 
-    print("------------------")
+    print("\n------------------")
     print("Pipeline completed")
     print("------------------\n")
     return {"training": all_training_metrics, "validation": all_validation_metrics}
