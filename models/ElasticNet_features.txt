@@ -3,17 +3,12 @@ Host age
 Alistipes putredinis
 Anaerotruncus colihominis
 Christensenella minuta
-Clostridium amylolyticum
 Desulfonispora thiosulfatigenes
-Lachnospiraceae bacterium 7_1_58FAA
-Oscillibacter valericigenes
-Papillibacter cinnamivorans
 Ruminiclostridium thermocellum
 Ruminococcus champanellensis
 Ruminococcus flavefaciens
 Sporobacter termitidis
 Clostridium clariflavum
-Clostridium propionicum
 Clostridium stercorarium
 Clostridium symbiosum
 Eubacterium dolichum

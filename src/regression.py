@@ -175,7 +175,7 @@ class Regressor:
 
     def _feature_selection(self, feature_selection_dict):
         threshold = feature_selection_dict.get("threshold", 0.1)
-        k = feature_selection_dict.get("k", 15)
+        k = feature_selection_dict.get("k", 20)
         n_folds = feature_selection_dict.get("n_folds", 5)
 
         selectors = {
@@ -336,8 +336,7 @@ class Regressor:
                 param_grid = {
                     "alpha": np.linspace(0.1, 1.0, grid_size),
                     "l1_ratio": np.linspace(0.1, 1.0, grid_size),
-                    "max_iter": [1000, 2000, 5000],
-                    "tol": [1e-3, 1e-4, 1e-5]
+                    "tol": [1e-3, 1e-4, 1e-5, 1e-6, 1e-7]
                 }
             else:
                 param_grid = tune_dict.get("param_grid", {})
@@ -352,14 +351,13 @@ class Regressor:
         if mode == "tune":
             if tune_dict.get("param_grid") is None:
                 param_grid = {
-                    "C": np.linspace(0.1, 1.0, grid_size),
-                    "epsilon": np.linspace(0.0, 1.0, grid_size),
-                    "kernel": ["linear", "poly", "rbf"],
-                    "gamma": ["scale", "auto"],
+                    "kernel": ["rbf", "linear", "poly", "sigmoid"],
                     "degree": [2, 3, 4],
-                    "coef0": np.linspace(0.0, 1.0, grid_size),
-                    "max_iter": [1000, 2000, 5000],
-                    "tol": [1e-3, 1e-4, 1e-5]
+                    "gamma": ["scale", "auto"],
+                    "coef0": np.linspace(0.0, 1, grid_size),
+                    "tol": [1e-3, 1e-4, 1e-5, 1e-6, 1e-7],
+                    "C": np.linspace(0.1, 1.0, grid_size),
+                    "epsilon": np.linspace(0.0, 1.0, grid_size)
                 }
             else:
                 param_grid = tune_dict.get("param_grid", {})
@@ -374,12 +372,12 @@ class Regressor:
         if mode == "tune":
             if tune_dict.get("param_grid") is None:
                 param_grid = {
-                    "alpha_1": np.linspace(1e-6, 1e-3, grid_size),
-                    "alpha_2": np.linspace(1e-6, 1e-3, grid_size),
-                    "lambda_1": np.linspace(1e-6, 1e-3, grid_size),
-                    "lambda_2": np.linspace(1e-6, 1e-3, grid_size),
-                    "n_iter": [1000, 2000, 5000],
-                    "tol": [1e-3, 1e-4, 1e-5]
+                    "tol": [1e-3, 1e-4, 1e-5, 1e-6, 1e-7],
+                    "alpha_1": np.linspace(1e-3, 1e-9, grid_size),
+                    "alpha_2": np.linspace(1e-3, 1e-9, grid_size),
+                    "lambda_1": np.linspace(1e-3, 1e-9, grid_size),
+                    "lambda_2": np.linspace(1e-3, 1e-9, grid_size),
+                    "compute_score": [True, False]
                 }
             else:
                 param_grid = tune_dict.get("param_grid", {})
@@ -532,19 +530,31 @@ def pipeline(
 
     print("----------------")
     print("Running pipeline")
-    print("----------------\n")
+    print("----------------")
 
-    development_dataset_full_path = os.path.join(dataset_dir, "development_final.csv")
-    validation_dataset_full_path = os.path.join(dataset_dir, "validation_final.csv")
+    development_dataset_full_path = os.path.join(
+        dataset_dir,
+        "development_final.csv"
+    )
+    validation_dataset_full_path = os.path.join(
+        dataset_dir,
+        "validation_final.csv"
+    )
 
-    development_dataset = pd.read_csv(development_dataset_full_path, index_col=0)
-    validation_dataset = pd.read_csv(validation_dataset_full_path, index_col=0)
+    development_dataset = pd.read_csv(
+        development_dataset_full_path,
+        index_col=0
+    )
+    validation_dataset = pd.read_csv(
+        validation_dataset_full_path,
+        index_col=0
+    )
 
     all_training_metrics = {}
     all_validation_metrics = {}
 
     for model_type in model_types:
-        print("--------------------")
+        print("\n--------------------")
         print(f"{model_type:^20}")
 
         all_training_metrics[model_type] = {}
@@ -568,13 +578,12 @@ def pipeline(
             print("Training completed")
 
             print("Validating... ", end="")
-            regressor.validate(
+            metrics = regressor.validate(
                 model_name=model_type,
                 mode=mode,
                 val_df=validation_dataset,
                 target=target_col
             )
-            metrics = regressor.metrics
             all_validation_metrics[model_type][mode] = metrics
             print("Validation completed")
 
