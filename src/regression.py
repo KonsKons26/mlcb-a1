@@ -110,30 +110,49 @@ class Regressor:
 
         X_val = val_df.drop(columns=[target])
         y_val = val_df[target]
+#
+        model = self._load_model(model_name)
+        scaler = self._load_scaler(model_name)
+        if mode != "baseline":
+            best_features = self._load_features(model_name.split("_")[0])
+            X_val = X_val[best_features]
 
-        if mode == "baseline":
-            all_metrics = self._validate_baseline(
-                model_name=model_name,
-                X_val=X_val,
-                y_val=y_val,
-                n_bootstrap=n_bootstrap
-            )
+        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
 
-        if mode == "feature_selection":
-            all_metrics = self._validate_feature_selection(
-                model_name=model_name,
-                X_val=X_val,
-                y_val=y_val,
-                n_bootstrap=n_bootstrap
-            )
+        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
 
-        if mode == "tune":
-            all_metrics = self._validate_tune(
-                model_name=model_name,
-                X_val=X_val,
-                y_val=y_val,
-                n_bootstrap=n_bootstrap
-            )
+        for _ in range(n_bootstrap):
+            X_sample, y_sample = resample(X_val, y_val)
+
+            y_pred = model.predict(X_sample)
+            metrics = self._regression_metrics(y_sample, y_pred)
+
+            for metric_name, metric_values in metrics.items():
+                all_metrics[metric_name].extend(metric_values)
+#
+        # if mode == "baseline":
+        #     all_metrics = self._validate_baseline(
+        #         model_name=model_name,
+        #         X_val=X_val,
+        #         y_val=y_val,
+        #         n_bootstrap=n_bootstrap
+        #     )
+
+        # if mode == "feature_selection":
+        #     all_metrics = self._validate_feature_selection(
+        #         model_name=model_name,
+        #         X_val=X_val,
+        #         y_val=y_val,
+        #         n_bootstrap=n_bootstrap
+        #     )
+
+        # if mode == "tune":
+        #     all_metrics = self._validate_tune(
+        #         model_name=model_name,
+        #         X_val=X_val,
+        #         y_val=y_val,
+        #         n_bootstrap=n_bootstrap
+        #     )
 
         return all_metrics
 
@@ -330,7 +349,7 @@ class Regressor:
 
 
     def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict):
-        grid_size = tune_dict.get("grid_size", 10)
+        grid_size = tune_dict.get("grid_size", 50)
         if mode == "tune":
             if tune_dict.get("param_grid") is None:
                 param_grid = {
@@ -407,70 +426,6 @@ class Regressor:
         best_method = max(all_methods, key=all_methods.get)
 
         return best_method
-
-
-    def _validate_baseline(self, model_name, X_val, y_val, n_bootstrap):
-        model = self._load_model(model_name)
-        scaler = self._load_scaler(model_name)
-
-        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
-
-        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
-
-        for _ in range(n_bootstrap):
-            X_sample, y_sample = resample(X_val, y_val)
-
-            y_pred = model.predict(X_sample)
-            metrics = self._regression_metrics(y_sample, y_pred)
-
-            for metric_name, metric_values in metrics.items():
-                all_metrics[metric_name].extend(metric_values)
-
-        return all_metrics
-
-
-    def _validate_feature_selection(self, model_name, X_val, y_val, n_bootstrap):
-        model = self._load_model(model_name)
-        scaler = self._load_scaler(model_name)
-        best_features = self._load_features(model_name.split("_")[0])
-
-        X_val = X_val[best_features]
-        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
-
-        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
-
-        for _ in range(n_bootstrap):
-            X_sample, y_sample = resample(X_val, y_val)
-
-            y_pred = model.predict(X_sample)
-            metrics = self._regression_metrics(y_sample, y_pred)
-
-            for metric_name, metric_values in metrics.items():
-                all_metrics[metric_name].extend(metric_values)
-
-        return all_metrics
-
-
-    def _validate_tune(self, model_name, X_val, y_val, n_bootstrap):
-        model = self._load_model(model_name)
-        scaler = self._load_scaler(model_name)
-        best_features = self._load_features(model_name.split("_")[0])
-
-        X_val = X_val[best_features]
-        X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
-
-        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
-
-        for _ in range(n_bootstrap):
-            X_sample, y_sample = resample(X_val, y_val)
-
-            y_pred = model.predict(X_sample)
-            metrics = self._regression_metrics(y_sample, y_pred)
-
-            for metric_name, metric_values in metrics.items():
-                all_metrics[metric_name].extend(metric_values)
-
-        return all_metrics
 
 
     def _regression_metrics(self, y_test, y_pred):
