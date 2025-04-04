@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 
@@ -47,6 +49,7 @@ def plot_metrics(
         modes = ["baseline", "feature_selection", "tune"],
         metrics = ["RMSE", "MAE", "R2"]
     ) -> None:
+    """Plot RMSE, MAE, and R2 for each model grouped by mode"""
 
     def plot_metrics_helper(
         model,
@@ -57,7 +60,8 @@ def plot_metrics(
         sns.boxplot(
             data=df
         )
-        plt.title(f"{model} - {metric}")
+        plt.title(model)
+        plt.ylabel(metric)
         plt.show()
 
     
@@ -85,3 +89,69 @@ def plot_metrics(
                 metric,
                 df
             )
+
+
+
+def plot_features_interactive(all_features, models_dir):
+    """Plot the features selected across all models with model-based color segments."""
+
+    models = ["ElasticNet", "SVR", "BayesianRidge"]
+
+    feat_dict = {f: {model: 0 for model in models} for f in all_features}
+
+    for model in models:
+        feature_file = os.path.join(models_dir, f"{model}_features.txt")
+        with open(feature_file, "r") as handle:
+            fs = [line.strip() for line in handle]
+        for f in fs:
+            if f in feat_dict:
+                feat_dict[f][model] += 1
+
+    feat_dict = {
+        f: counts for f, counts in feat_dict.items()
+        if sum(counts.values()) > 0
+    }
+
+    sorted_items = sorted(feat_dict.items(), key=lambda item: sum(item[1].values()), reverse=True)
+    features = [item[0] for item in sorted_items]
+
+    data = {model: [feat_dict[feat][model] for feat in features] for model in models}
+
+    fig = go.Figure()
+
+    colors = {
+        "ElasticNet": "indigo",
+        "SVR": "teal",
+        "BayesianRidge": "tomato"
+    }
+
+    for model in models:
+        fig.add_trace(go.Bar(
+            x=features,
+            y=data[model],
+            name=model,
+            marker_color=colors.get(model, None)
+        ))
+
+    fig.update_layout(
+        barmode='stack',
+        title=dict(
+            text="Feature Frequency by Model",
+            font=dict(size=24)
+        ),
+        xaxis_title=dict(
+            text="Features",
+            font=dict(size=20)
+        ),
+        yaxis_title=dict(
+            text="Count",
+            font=dict(size=20)
+        ),
+        template="plotly_white",
+        height=1000,
+        legend=dict(
+            font=dict(size=18)
+        )
+    )
+
+    fig.show()
