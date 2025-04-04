@@ -93,7 +93,8 @@ def plot_metrics(
 
 
 def plot_features_interactive(all_features, models_dir):
-    """Plot the features selected across all models with model-based color segments."""
+    """Plot the features selected across all models with model-based color
+    segments."""
 
     models = ["ElasticNet", "SVR", "BayesianRidge"]
 

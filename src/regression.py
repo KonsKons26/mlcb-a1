@@ -4,6 +4,9 @@ import pandas as pd
 
 import numpy as np
 
+from matplotlib import pyplot as plt
+import seaborn as sns
+
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import (
@@ -766,3 +769,63 @@ def pipeline(
     print("Pipeline completed")
     print("------------------\n")
     return {"training": all_training_metrics, "validation": all_validation_metrics}
+
+
+def inference(
+        model_path: str,
+        model_name: str,
+        mode: str,
+        test_df: pd.DataFrame,
+        target_name: str,
+        n_bootstrap: int = 1000,
+        plot_metrics: bool = True
+    ) -> dict:
+
+    all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+
+    model = load(os.path.join(
+        model_path, model_name, "_", mode, ".joblib"
+    ))
+    scaler = load(os.path.join(
+        model_path, model_name, "_", mode, "_scaler.joblib"
+    ))
+    with open(os.path.join(model_path, model_name, "_features.txt"), "r") as f:
+        fs = f.readlines()
+    features = [f.strip() for f in fs]
+
+    X = test_df.drop(columns=target_name)
+    y = test_df[target_name]
+
+    X = X[features]
+
+    X = pd.DataFrame(scaler.transform[X], columns = X.columns)
+
+    for _ in range(n_bootstrap):
+        X_sample, y_sample = resample(X, y)
+
+        y_pred = model.predict(X_sample)
+
+        all_metrics["RMSE"] = root_mean_squared_error(y_sample, y_pred)
+        all_metrics["MAE"] = [mean_absolute_error(y_sample, y_pred)]
+        all_metrics["R2"] = r2_score(y_sample, y_pred)
+
+    print(f"{'metric':^20} | {'mean':^20} | {'median':^20} | {'std':^20}")
+    print("-" * 89)
+    for metric, values in all_metrics.items():
+        mean = np.mean(values)
+        median = np.median(values)
+        std = np.std(values)
+        print(f"{metric:^20} | {mean:^20.4f} | {median:^20.4f} | {std:^20.4f}")
+ 
+    # if plot_metrics:
+    #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 8))
+    #     i = 0
+    #     for k, v in all_metrics.items():
+    #         sns.boxplot(
+    #             data=v,
+    #             ax=axes[i]
+    #         )
+    #         i += 1
+    #     plt.show()
+
+    return all_metrics
