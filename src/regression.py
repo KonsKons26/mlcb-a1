@@ -777,6 +777,7 @@ def inference(
         mode: str,
         test_df: pd.DataFrame,
         target_name: str,
+        bootstrap: bool = False,
         n_bootstrap: int = 1000,
         plot_metrics: bool = True
     ) -> dict:
@@ -784,12 +785,12 @@ def inference(
     all_metrics = {"RMSE": [], "MAE": [], "R2": []}
 
     model = load(os.path.join(
-        model_path, model_name, "_", mode, ".joblib"
+        model_path, f"{model_name}_{mode}.joblib"
     ))
     scaler = load(os.path.join(
-        model_path, model_name, "_", mode, "_scaler.joblib"
+        model_path, f"{model_name}_{mode}_scaler.joblib"
     ))
-    with open(os.path.join(model_path, model_name, "_features.txt"), "r") as f:
+    with open(os.path.join(model_path, f"{model_name}_features.txt"), "r") as f:
         fs = f.readlines()
     features = [f.strip() for f in fs]
 
@@ -798,34 +799,50 @@ def inference(
 
     X = X[features]
 
-    X = pd.DataFrame(scaler.transform[X], columns = X.columns)
+    X = pd.DataFrame(scaler.transform(X), columns = X.columns)
 
-    for _ in range(n_bootstrap):
-        X_sample, y_sample = resample(X, y)
+    if bootstrap:
+        for _ in range(n_bootstrap):
+            X_sample, y_sample = resample(X, y)
 
-        y_pred = model.predict(X_sample)
+            y_pred = model.predict(X_sample)
 
-        all_metrics["RMSE"] = root_mean_squared_error(y_sample, y_pred)
-        all_metrics["MAE"] = [mean_absolute_error(y_sample, y_pred)]
-        all_metrics["R2"] = r2_score(y_sample, y_pred)
+            all_metrics["RMSE"].append(root_mean_squared_error(y_sample, y_pred))
+            all_metrics["MAE"].append(mean_absolute_error(y_sample, y_pred))
+            all_metrics["R2"].append(r2_score(y_sample, y_pred))
 
-    print(f"{'metric':^20} | {'mean':^20} | {'median':^20} | {'std':^20}")
-    print("-" * 89)
-    for metric, values in all_metrics.items():
-        mean = np.mean(values)
-        median = np.median(values)
-        std = np.std(values)
-        print(f"{metric:^20} | {mean:^20.4f} | {median:^20.4f} | {std:^20.4f}")
+        print(f"{'metric':^20} | {'mean':^20} | {'median':^20} | {'std':^20}")
+        print("-" * 89)
+        for metric, values in all_metrics.items():
+            mean = np.mean(values)
+            median = np.median(values)
+            std = np.std(values)
+            print(f"{metric:^20} | {mean:^20.4f} | {median:^20.4f} | {std:^20.4f}")
+
+        if plot_metrics:
+            fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+            metrics = ["RMSE", "MAE", "R2"]
+            for i, metric in enumerate(metrics):
+                sns.boxplot(data=all_metrics[metric], ax=axes[i])
+                axes[i].set_title(metric)
+                axes[i].set_xlabel("Bootstrap samples")
+                axes[i].set_ylabel(metric)
+                axes[i].grid(True)
+            plt.tight_layout()
+            plt.show()
+
+        return all_metrics
  
-    # if plot_metrics:
-    #     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 8))
-    #     i = 0
-    #     for k, v in all_metrics.items():
-    #         sns.boxplot(
-    #             data=v,
-    #             ax=axes[i]
-    #         )
-    #         i += 1
-    #     plt.show()
+    else:
+        y_pred = model.predict(X)
 
-    return all_metrics
+        rmse = root_mean_squared_error(y, y_pred)
+        mae = mean_absolute_error(y, y_pred)
+        r2 = r2_score(y, y_pred)
+
+        print("RMSE: ", rmse)
+        print("MAE: ", mae)
+        print("R2: ", r2)
+
+        return y_pred
+
