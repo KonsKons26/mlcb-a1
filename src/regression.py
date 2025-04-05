@@ -780,7 +780,37 @@ def inference(
         bootstrap: bool = False,
         n_bootstrap: int = 1000,
         plot_metrics: bool = True
-    ) -> dict:
+    ) -> dict | np.ndarray:
+    """Performs inference using the trained model.
+
+    Parameters
+    ----------
+    model_path : str
+        The path to the directory where the model is saved.
+    model_name : str
+        The name of the model to use for inference. Options are
+        "ElasticNet", "SVR", or "BayesianRidge".
+    mode : str
+        The mode to use for inference. Options are "baseline",
+        "feature_selection", or "tune".
+    test_df : pd.DataFrame
+        The test dataset to use for inference.
+    target_name : str
+        The target variable to predict.
+    bootstrap : bool, default=False
+        Whether to use bootstrap sampling for inference.
+    n_bootstrap : int, default=1000
+        The number of bootstrap samples to use for inference.
+    plot_metrics : bool, default=True
+        Whether to plot the metrics after inference.
+
+    Returns
+    -------
+    dict or np.ndarray
+        If bootstrap is True, returns a dictionary containing the
+        regression metrics for each bootstrap sample. If bootstrap is
+        False, returns the predicted values for the test dataset.
+    """
 
     all_metrics = {"RMSE": [], "MAE": [], "R2": []}
 
