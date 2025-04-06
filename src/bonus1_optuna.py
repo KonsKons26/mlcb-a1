@@ -172,7 +172,7 @@ class RegressorOptuna(Regressor):
         self.metrics["features"] = best_features
         self.metrics["optimization_history"] = self.study.trials_dataframe()
 
-        self.mode = "optuna"
+        self.model_name = f"{self.model_type}_optuna"
 
         return self.metrics
 

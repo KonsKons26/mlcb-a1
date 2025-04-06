@@ -80,7 +80,7 @@ class Regressor:
             A dictionary containing the training metrics.
         """
 
-        model_name = f"{self.model_type}_{mode}"
+        self.model_name = f"{self.model_type}_{mode}"
 
         # ElasticNet
         if self.model_type == "ElasticNet":
@@ -92,8 +92,8 @@ class Regressor:
             )
 
             if save_model:
-                self._save_model(model_name)
-                self._save_scaler(model_name)
+                self._save_model(self.model_name)
+                self._save_scaler(self.model_name)
 
         # SVR
         if self.model_type == "SVR":
@@ -105,8 +105,8 @@ class Regressor:
             )
 
             if save_model:
-                self._save_model(model_name)
-                self._save_scaler(model_name)
+                self._save_model(self.model_name)
+                self._save_scaler(self.model_name)
 
         # BayesianRidge
         if self.model_type == "BayesianRidge":
@@ -118,8 +118,8 @@ class Regressor:
             )
 
             if save_model:
-                self._save_model(model_name)
-                self._save_scaler(model_name)
+                self._save_model(self.model_name)
+                self._save_scaler(self.model_name)
 
         return self.metrics
 
@@ -158,15 +158,15 @@ class Regressor:
 
         """
 
-        model_name = f"{model_name}_{mode}"
+        self.model_name = f"{model_name}_{mode}"
 
         X_val = val_df.drop(columns=[target])
         y_val = val_df[target]
 
-        model = self._load_model(model_name)
-        scaler = self._load_scaler(model_name)
+        model = self._load_model(self.model_name)
+        scaler = self._load_scaler(self.model_name)
         if mode != "baseline":
-            best_features = self._load_features(model_name.split("_")[0])
+            best_features = self._load_features(self.model_name.split("_")[0])
             X_val = X_val[best_features]
 
         X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
