@@ -8,7 +8,7 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import r2_score
+from sklearn.metrics import root_mean_squared_error
 
 import optuna
 from optuna.samplers import TPESampler
@@ -33,7 +33,7 @@ class RegressorOptuna(Regressor):
             else:
                 param_grid = tune_dict.get("param_grid")
             n_folds = tune_dict.get("n_folds", 5)
-            n_trials = tune_dict.get("n_trials", 100)
+            n_trials = tune_dict.get("n_trials", 1000)
             timeout = tune_dict.get("timeout", None)
             self._tune_model(param_grid, n_folds, n_trials, timeout)
         else:
@@ -56,7 +56,7 @@ class RegressorOptuna(Regressor):
             else:
                 param_grid = tune_dict.get("param_grid")
             n_folds = tune_dict.get("n_folds", 5)
-            n_trials = tune_dict.get("n_trials", 100)
+            n_trials = tune_dict.get("n_trials", 1000)
             timeout = tune_dict.get("timeout", None)
             self._tune_model(param_grid, n_folds, n_trials, timeout)
         else:
@@ -76,7 +76,7 @@ class RegressorOptuna(Regressor):
             else:
                 param_grid = tune_dict.get("param_grid")
             n_folds = tune_dict.get("n_folds", 5)
-            n_trials = tune_dict.get("n_trials", 100)
+            n_trials = tune_dict.get("n_trials", 1000)
             timeout = tune_dict.get("timeout", None)
             self._tune_model(param_grid, n_folds, n_trials, timeout)
         else:
@@ -128,29 +128,36 @@ class RegressorOptuna(Regressor):
 
             model_instance = type(self.model)(**params)
 
-            kf = KFold(
-                n_splits=n_folds, shuffle=True, random_state=self.random_state
-            )
+            #
+            model_instance.fit(X_train, y_train)
+            y_pred = model_instance.predict(X_test)
 
-            scores = []
+            return root_mean_squared_error(y_test, y_pred)
+            #
 
-            for train_idx, val_idx in kf.split(X_train):
-                X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
-                y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
+            # kf = KFold(
+            #     n_splits=n_folds, shuffle=True, random_state=self.random_state
+            # )
 
-                model_instance.fit(X_fold_train, y_fold_train)
+            # scores = []
 
-                y_fold_pred = model_instance.predict(X_fold_val)
+            # for train_idx, val_idx in kf.split(X_train):
+            #     X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
+            #     y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
 
-                score = r2_score(y_fold_val, y_fold_pred)
-                scores.append(score)
+            #     model_instance.fit(X_fold_train, y_fold_train)
 
-            return np.mean(scores)
+            #     y_fold_pred = model_instance.predict(X_fold_val)
+
+            #     score = r2_score(y_fold_val, y_fold_pred)
+            #     scores.append(score)
+
+            # return np.mean(scores)
 
         sampler = TPESampler(seed=self.random_state)
 
         self.study = optuna.create_study(
-            direction="maximize",
+            direction="minimize",
             sampler=sampler
         )
         optuna.logging.set_verbosity(optuna.logging.WARNING)

@@ -52,13 +52,77 @@
 
 \vspace{0.5in}
 
+% \clearpage
 % Table of contents
 \tableofcontents
 \clearpage
 
-% \clearpage
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Migration to Optuna}
+Since the \texttt{Regressor} object I had created to perform all regression tasks
+was highly modularized, with specific methods for each task, moving from \texttt{%
+sklearn}'s \texttt{GridSearchCV} to \texttt{Optuna} was quite simple. I created
+a new class named \texttt{RegressorOptuna} which inherited from \texttt{Regressor},
+to keep it's basic functionalities the same. Then I modified the private methods
+handling each model's hyperparameter optimization to allow me to pass the appropriate
+grid spaces --and in the appropriate format-- for \texttt{Optuna} to tune the models.
+
+The objective function \textbf{minimizes} the RMSE of the test set. The sampler
+I chose is the \texttt{TPESampler}, a tree-structured Parzen estimator, which fits
+one Gaussian Mixture Model (GMM) ($l{x}$) to the set of parameters associated with
+the best objective values and another GMM ($g(x)$) to the remaining parameter values.
+It chooses the parameter that minimizes the ration $l(x)/g(x)$.
+
+All files are in the appropriate directories, \texttt{src/} and \texttt{notebooks/}
+and the models were saved in \texttt{models/bonus1\_optuna/}. Since I used the
+features I selected in the previous task, to keep everything organized, the process
+includes copying the features files in the \texttt{models/bonus1\_optuna}
+directory.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hyperparameter tuning}
+I set the number of trials for each model tuning to $1000$, which seemed appropriate,
+as it was not such a demanding number for my machine, and since the hyperparameter
+space has so many dimension, I believe that a small number of trials might not be
+enough to search the whole space. The complete hyperparameter space, along with the
+values chosen by \texttt{Optuna} are shown in Table~\ref{tab:hyperparams}.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        \textbf{Model} & \textbf{Parameter} & \textbf{Values} & \textbf{Picked value} \\
+        \hline
+        \multirow{3}{*}{ElasticNet} 
+            & \texttt{$\alpha$} & (0.01, 1.0) & $0.11850$ \\
+            & \texttt{l1 ratio} & (0.0, 1.0) & $0.77838$ \\
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & $0.00100$ \\
+        \hline
+        \multirow{7}{*}{SVR} 
+            & \texttt{kernel} & [`rbf', `linear', `poly', `sigmoid'] & `rbf' \\
+            & \texttt{degree} & (2, 5) & $4$ \\
+            & \texttt{$\gamma$} & [`scale', `auto'] & `scale' \\
+            & \texttt{coef\_0} & (0.0, 1) & $0.93453$ \\
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-7 \\
+            & \texttt{C} & (0.1, 10) & $1.63421$ \\
+            & \texttt{$\epsilon$} & (0.0, 10.0) & $0.92788$ \\
+        \hline
+        \multirow{6}{*}{BayesianRidge} 
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-7 \\
+            & \texttt{$\alpha_1$} & (1e-9, 1e-3) & $0.0$ \\
+            & \texttt{$\alpha_2$} & (1e-9, 1e-3) & $0.00065$ \\
+            & \texttt{$\lambda_1$} & (1e-3, 1e-9) & $0.0009999$ \\
+            & \texttt{$\lambda_2$} & (1e-3, 1e-9) & $0.0$ \\
+            & \texttt{compute\_score} & [True, False] & True \\
+        \hline
+    \end{tabular}
+    \caption{Hyperparameter spaces for each model.}
+    \label{tab:hyperparams}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}
 
 
 

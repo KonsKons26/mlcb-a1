@@ -167,7 +167,7 @@ def pretty_print_hyperparameters_optuna(all_metrics: dict) -> str:
         s += "\n"
         for k, v in all_metrics["training"][model_type]["tune"]["best_hyperparameters"].items():
             if isinstance(v, float):
-                s += f"{k:<15}{v:>15.5f}\n"
+                s += f"{k:<15}{v:>15.7f}\n"
             else:
                 s += f"{k:<15}{v:>15}\n"
     return s
@@ -179,7 +179,6 @@ def plot_metrics_optuna(all_metrics, model_types=None, metrics_types=None):
         model_types = list(all_metrics.get("validation", {}).keys())
 
     if metrics_types is None:
-        # Infer from the first model
         first_model = next(iter(all_metrics["validation"].values()))
         metrics_types = list(first_model.get("tune", {}).keys())
 
@@ -205,11 +204,11 @@ def plot_metrics_optuna(all_metrics, model_types=None, metrics_types=None):
         print("No data available to plot.")
         return
 
-    # Plot
+
     fig, axes = plt.subplots(1, len(metrics_types), figsize=(6 * len(metrics_types), 6))
 
     if len(metrics_types) == 1:
-        axes = [axes]  # Make it iterable
+        axes = [axes]
 
     for i, metric in enumerate(metrics_types):
         sns.boxplot(

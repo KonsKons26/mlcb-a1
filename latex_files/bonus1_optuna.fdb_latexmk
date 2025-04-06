@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1743940586.21547 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" "bonus1_optuna.pdf" "bonus1_optuna" 1743940586.78838 0
+["pdflatex"] 1743958521.21993 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" "bonus1_optuna.pdf" "bonus1_optuna" 1743958521.78002 0
   "/etc/texmf/web2c/texmf.cnf" 1729638216.40103 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" 1743940585.46222 1275 14b635ebafab1fbf01fd1d5074966494 ""
+  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" 1743958521.01443 4700 95d1b5e191e2f2baf293ece6baf4865c ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -23,8 +23,10 @@
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm" 1136768653 1120 8b7d695260f3cff42e636090a8002094 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/cm/cmtt12.tfm" 1136768653 772 9a936b7f5e2ff0557fce0f62822f0bbf ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb" 1248133631 32080 340ef9bf63678554ee606688e7b5339d ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb" 1248133631 36741 fa121aac0049305630cf160b86157ee4 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb" 1248133631 32722 d7379af29a190c3f453aba36302ff5a9 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb" 1248133631 32362 179c33bbf43f19adbb3825bb4e36e57a ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1248133631 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb" 1248133631 24252 1e4e051947e12dfb50fee0b7f4e26e3a ""
   "/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/share/texlive/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
@@ -123,10 +125,10 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1729638238.89271 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1729638334 8214299 96f9d54efb5f15826d8177841ce33d37 ""
-  "bonus1_optuna.aux" 1743940586.7242 315 ff6fd46e634c64801bf930884d9421ef "pdflatex"
-  "bonus1_optuna.out" 1743940586.7252 144 c9fa339a50d4ae67d506bca56d59ab81 "pdflatex"
-  "bonus1_optuna.tex" 1743940585.46222 1275 14b635ebafab1fbf01fd1d5074966494 ""
-  "bonus1_optuna.toc" 1743940586.7262 75 c8774a29a9188ea3b000f3e089250547 "pdflatex"
+  "bonus1_optuna.aux" 1743958521.71843 847 7eb071b8a16afd1c5ddcd79332ef9231 "pdflatex"
+  "bonus1_optuna.out" 1743958521.71943 373 5b6b8df5e66cffc4db297cfab656a039 "pdflatex"
+  "bonus1_optuna.tex" 1743958521.01443 4700 95d1b5e191e2f2baf293ece6baf4865c ""
+  "bonus1_optuna.toc" 1743958521.72043 215 912dbdd3016223a8b3e6304cae9c7f9d "pdflatex"
   (generated)
   "bonus1_optuna.aux"
   "bonus1_optuna.log"
