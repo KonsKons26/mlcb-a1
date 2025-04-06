@@ -9,13 +9,9 @@ import seaborn as sns
 
 from sklearn.model_selection import train_test_split, KFold, GridSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import (
-    ElasticNet, BayesianRidge
-)
+from sklearn.linear_model import ElasticNet, BayesianRidge
 from sklearn.svm import SVR
-from sklearn.metrics import (
-    root_mean_squared_error, mean_absolute_error, r2_score
-)
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 from sklearn.feature_selection import (
     VarianceThreshold, SelectKBest, r_regression, f_regression
 )
@@ -25,7 +21,6 @@ from joblib import dump, load
 
 
 class Regressor:
-
 
     def __init__(
             self,
@@ -46,7 +41,6 @@ class Regressor:
         self.scaler = None
         self.selection = None
         self.metrics = None
-
 
     def train(
             self,
@@ -129,7 +123,6 @@ class Regressor:
 
         return self.metrics
 
-
     def validate(
             self,
             model_name: str,
@@ -191,7 +184,6 @@ class Regressor:
 
         return all_metrics
 
-
     def _train_model_no_tune(self, mode, feature_selection_dict) -> None:
         """Trains the model without tuning, controller private method."""
         if mode == "baseline":
@@ -199,7 +191,6 @@ class Regressor:
 
         if mode == "feature_selection":
             self._feature_selection(feature_selection_dict)
-
 
     def _train_baseline(self) -> None:
         """Trains the model without tuning or feature selection.
@@ -236,7 +227,6 @@ class Regressor:
 
         self.metrics = metrics
         self.scaler = scaler
-
 
     def _feature_selection(self, feature_selection_dict):
         """Performs feature selection and trains the model.
@@ -383,7 +373,6 @@ class Regressor:
 
         self._save_features(self.model_type)
 
-
     def _tune_model(self, param_grid, n_folds) -> None:
         """Tunes the model using GridSearchCV.
 
@@ -446,8 +435,12 @@ class Regressor:
         self.metrics["best_score"] = best_score
         self.metrics["features"] = best_features
 
-
-    def _train_ElasticNet(self, mode, feature_selection_dict, tune_dict) -> None:
+    def _train_ElasticNet(
+        self,
+        mode: str,
+        feature_selection_dict: dict,
+        tune_dict: dict
+    ) -> None:
         """Trains the ElasticNet model.
 
         This private method is used to train the ElasticNet model. It calls the
@@ -464,8 +457,8 @@ class Regressor:
         tune_dict : dict
             A dictionary containing parameters for tuning.
         """
-        grid_size = tune_dict.get("grid_size", 50)
         if mode == "tune":
+            grid_size = tune_dict.get("grid_size", 50)
             if tune_dict.get("param_grid") is None:
                 param_grid = {
                     "alpha": np.linspace(0.1, 1.0, grid_size),
@@ -479,8 +472,12 @@ class Regressor:
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
-
-    def _train_SVR(self, mode, feature_selection_dict, tune_dict) -> None:
+    def _train_SVR(
+        self,
+        mode: str,
+        feature_selection_dict: dict,
+        tune_dict: dict
+    ) -> None:
         """Trains the SVR model.
 
         This private method is used to train the ElasticNet model. It calls the
@@ -497,8 +494,8 @@ class Regressor:
         tune_dict : dict
             A dictionary containing parameters for tuning.
         """
-        grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
+            grid_size = tune_dict.get("grid_size", 10)
             if tune_dict.get("param_grid") is None:
                 param_grid = {
                     "kernel": ["rbf", "linear", "poly", "sigmoid"],
@@ -516,8 +513,12 @@ class Regressor:
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
-
-    def _train_BayesianRidge(self, mode, feature_selection_dict, tune_dict) -> None:
+    def _train_BayesianRidge(
+        self,
+        mode: str,
+        feature_selection_dict: dict,
+        tune_dict: dict
+    ) -> None:
         """Trains the BayesianRidge model.
 
         This private method is used to train the ElasticNet model. It calls the
@@ -534,8 +535,8 @@ class Regressor:
         tune_dict : dict
             A dictionary containing parameters for tuning.
         """
-        grid_size = tune_dict.get("grid_size", 10)
         if mode == "tune":
+            grid_size = tune_dict.get("grid_size", 10)
             if tune_dict.get("param_grid") is None:
                 param_grid = {
                     "tol": [1e-3, 1e-4, 1e-5, 1e-6, 1e-7],
@@ -551,7 +552,6 @@ class Regressor:
             self._tune_model(param_grid, n_folds)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
-
 
     def _get_top_feature_selection_method(self) -> str:
         """Selects the feature selection method that yields the best performance.
@@ -588,7 +588,6 @@ class Regressor:
 
         return best_method
 
-
     def _regression_metrics(self, y_test, y_pred) -> dict:
         """Calculates regression metrics.
 
@@ -618,18 +617,15 @@ class Regressor:
             "R2": [r2_score(y_test, y_pred)]
         }
 
-
     def _save_model(self, model_name: str):
         """Saves the model to the models directory."""
         model_name = model_name + ".joblib"
         dump(self.model, os.path.join(self.models_dir, model_name))
 
-
     def _save_scaler(self, scaler_name: str):
         """Saves the scaler to the models directory."""
         scaler_name = scaler_name + "_scaler.joblib"
         dump(self.scaler, os.path.join(self.models_dir, scaler_name))
-
 
     def _save_features(self, model_name: str):
         """Saves the features to the models directory."""
@@ -638,20 +634,17 @@ class Regressor:
             for feature in self.metrics["features"]:
                 f.write(f"{feature}\n")
 
-
     def _load_model(self, model_name: str) -> object:
         """Loads the model from the models directory."""
         model_name = model_name + ".joblib"
         model = load(os.path.join(self.models_dir, model_name))
         return model
 
-
     def _load_scaler(self, scaler_name: str) -> object:
         """Loads the scaler from the models directory."""
         scaler_name = scaler_name + "_scaler.joblib"
         scaler = load(os.path.join(self.models_dir, scaler_name))
         return scaler
-
 
     def _load_features(self, model_name: str) -> list:
         """Loads the features from the models directory."""
@@ -660,7 +653,6 @@ class Regressor:
             features = f.readlines()
         features = [feature.strip() for feature in features]
         return features
-
 
 
 def pipeline(
@@ -875,4 +867,3 @@ def inference(
         print("R2: ", r2)
 
         return y_pred
-
