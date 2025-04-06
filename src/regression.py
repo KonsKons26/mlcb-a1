@@ -143,7 +143,8 @@ class Regressor:
             The name of the model to validate.
         mode : str
             The mode to use for validation. Options are "baseline",
-            "feature_selection", or "tune".
+            "feature_selection", or "tune" (or "optuna" if using the inherited
+            class "RegressorOptuna").
         val_df : pd.DataFrame
             The validation dataset to use for validation.
         target : str
