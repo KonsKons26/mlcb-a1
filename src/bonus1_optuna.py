@@ -1,4 +1,6 @@
-from regression import Regressor
+from src.regression import Regressor
+
+import os
 
 import pandas as pd
 
@@ -151,7 +153,7 @@ class RegressorOptuna(Regressor):
             direction="maximize",
             sampler=sampler
         )
-
+        optuna.logging.set_verbosity(optuna.logging.WARNING)
         self.study.optimize(
             objective, 
             n_trials=n_trials, 
@@ -172,17 +174,112 @@ class RegressorOptuna(Regressor):
         self.metrics["features"] = best_features
         self.metrics["optimization_history"] = self.study.trials_dataframe()
 
-        self.model_name = f"{self.model_type}_optuna"
-
         return self.metrics
 
 
+def pipeline_optuna(
+        models_dir: str,
+        dataset_dir: str,
+        target_col: str = "BMI",
+        model_types: list = ["ElasticNet", "SVR", "BayesianRidge"],
+        modes: list = ["tune"],
+        save_model: bool = True
+    ) -> dict:
+    """Hands-off pipeline for the regression models.
 
-if __name__ == "__main__":
-    model = RegressorOptuna(
-        model_type="SVR",
-        models_dir="/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/models",
-        dataset=pd.read_csv("/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/data/development_final.csv"),
-        target="BMI",
+    This function runs the entire pipeline for the regression models. It
+    loads the datasets, trains the models, validates them, and saves the
+    models and scalers. The models are trained using different modes:
+    baseline, feature_selection, and tune. The models are saved to the
+    models directory. The scalers are also saved to the models directory.
+
+    Parameters
+    ----------
+    models_dir : str
+        The directory where the models and scalers will be saved.
+    dataset_dir : str
+        The directory where the datasets are located.
+    target_col : str
+        The target variable to predict. Default is "BMI".
+    model_types : list
+        The list of model types to use for training. Default is
+        ["ElasticNet", "SVR", "BayesianRidge"].
+    modes : list
+        The list of modes to use for training. Default is
+        ["baseline", "feature_selection", "tune"].
+    save_model : bool
+        Whether to save the model and scaler after training. Default is
+        True.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the training and validation metrics for
+        each model type and mode. The keys are:
+            - training: A dictionary containing the training metrics.
+            - validation: A dictionary containing the validation metrics.
+    """
+
+    print("----------------")
+    print("Running pipeline")
+    print("----------------")
+
+    development_dataset_full_path = os.path.join(
+        dataset_dir,
+        "development_final.csv"
     )
-    metrics = model.train(mode="tune")
+    validation_dataset_full_path = os.path.join(
+        dataset_dir,
+        "validation_final.csv"
+    )
+
+    development_dataset = pd.read_csv(
+        development_dataset_full_path,
+        index_col=0
+    )
+    validation_dataset = pd.read_csv(
+        validation_dataset_full_path,
+        index_col=0
+    )
+
+    all_training_metrics = {}
+    all_validation_metrics = {}
+
+    for model_type in model_types:
+        print("\n--------------------")
+        print(f"{model_type:^20}")
+
+        all_training_metrics[model_type] = {}
+        all_validation_metrics[model_type] = {}
+
+        regressor = RegressorOptuna(
+            model_type=model_type,
+            models_dir=models_dir,
+            dataset=development_dataset,
+            target=target_col
+        )
+
+        for mode in modes:
+            print("--------------------")
+            print(f"{mode:^20}")
+            print("--------------------")
+            print("Training... ", end="")
+            regressor.train(mode=mode, save_model=save_model)
+            metrics = regressor.metrics
+            all_training_metrics[model_type][mode] = metrics
+            print("Training completed")
+
+            print("Validating... ", end="")
+            metrics = regressor.validate(
+                model_name=model_type,
+                mode=mode,
+                val_df=validation_dataset,
+                target=target_col
+            )
+            all_validation_metrics[model_type][mode] = metrics
+            print("Validation completed")
+
+    print("\n------------------")
+    print("Pipeline completed")
+    print("------------------\n")
+    return {"training": all_training_metrics, "validation": all_validation_metrics}
