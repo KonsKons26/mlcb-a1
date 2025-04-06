@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1743958521.21993 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" "bonus1_optuna.pdf" "bonus1_optuna" 1743958521.78002 0
+["pdflatex"] 1743972397.05005 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" "bonus.pdf" "bonus" 1743972398.28693 0
   "/etc/texmf/web2c/texmf.cnf" 1729638216.40103 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus1_optuna.tex" 1743958521.01443 4700 95d1b5e191e2f2baf293ece6baf4865c ""
+  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" 1743972392.40173 6079 7f94c7d7685d1fce09ac85edaa0d737b ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -125,14 +125,15 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1729638238.89271 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1729638334 8214299 96f9d54efb5f15826d8177841ce33d37 ""
-  "bonus1_optuna.aux" 1743958521.71843 847 7eb071b8a16afd1c5ddcd79332ef9231 "pdflatex"
-  "bonus1_optuna.out" 1743958521.71943 373 5b6b8df5e66cffc4db297cfab656a039 "pdflatex"
-  "bonus1_optuna.tex" 1743958521.01443 4700 95d1b5e191e2f2baf293ece6baf4865c ""
-  "bonus1_optuna.toc" 1743958521.72043 215 912dbdd3016223a8b3e6304cae9c7f9d "pdflatex"
+  "bonus.aux" 1743972398.17183 1595 76af913ab0e1c4563fdf2618f3f8fb79 "pdflatex"
+  "bonus.out" 1743972398.17283 1197 0e5af3fc282584927e82ad87724e7280 "pdflatex"
+  "bonus.tex" 1743972392.40173 6079 7f94c7d7685d1fce09ac85edaa0d737b ""
+  "bonus.toc" 1743972398.17583 486 770af34ff3d07ead4d0f9baa23f69667 "pdflatex"
+  "ims/optuna.png" 1743957871.79287 51402 4d6d5a8733f1541471ddbfad583a2f3f ""
   (generated)
-  "bonus1_optuna.aux"
-  "bonus1_optuna.log"
-  "bonus1_optuna.out"
-  "bonus1_optuna.pdf"
-  "bonus1_optuna.toc"
+  "bonus.aux"
+  "bonus.log"
+  "bonus.out"
+  "bonus.pdf"
+  "bonus.toc"
   (rewritten before read)

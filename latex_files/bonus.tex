@@ -34,7 +34,7 @@
 \title{%
     Machine Learning in Computational Biology \\
     \Large Assignment 1 \\
-    First Bonus Question --- Using Optuna
+    Bonus Questions
     }
 \author{%
     Konstantinos Konstantinidis \\
@@ -55,11 +55,16 @@
 % \clearpage
 % Table of contents
 \tableofcontents
+
+
 \clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{First bonus task: Using Optuna for hyperparameter tuning}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Migration to Optuna}
+\subsection{Migration to Optuna}
 Since the \texttt{Regressor} object I had created to perform all regression tasks
 was highly modularized, with specific methods for each task, moving from \texttt{%
 sklearn}'s \texttt{GridSearchCV} to \texttt{Optuna} was quite simple. I created
@@ -81,7 +86,7 @@ includes copying the features files in the \texttt{models/bonus1\_optuna}
 directory.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Hyperparameter tuning}
+\subsection{Hyperparameter tuning}
 I set the number of trials for each model tuning to $1000$, which seemed appropriate,
 as it was not such a demanding number for my machine, and since the hyperparameter
 space has so many dimension, I believe that a small number of trials might not be
@@ -122,7 +127,30 @@ values chosen by \texttt{Optuna} are shown in Table~\ref{tab:hyperparams}.
 \end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results}
+\subsection{Results}
+After tuning, the best models were saved (along with their scalers, like in the
+previous task) and then the validation set was used to measure their performance.
+For testing, the same approach with resampling was followed, for $1000$ repeats.
+The resulting boxplots are shown in Figure~\ref{fig:optuna}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{ims/optuna.png}
+    \caption{Test metrics after tuning with \texttt{Optuna}. ElasticNet in blue,
+    SVR in orange, and Bayesian Ridge in green.}
+    \label{fig:optuna}
+\end{figure}
+
+Similar to what was shown in the previous task, Elastic Net is the best performing
+model, but its RMSE and MAE still fail to drop below $3$, while $r^2$ fails to
+overcome $0.2$. These findings further increase my confidence that this dataset
+can not be used for regression tasks, at least no with the models that we analyzed.
+
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Second bonus task: Converting the problem to a binary classification task}
 
 
 

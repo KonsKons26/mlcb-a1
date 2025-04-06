@@ -1,0 +1,5 @@
+\contentsline {section}{\numberline {1}First bonus task: Using Optuna for hyperparameter tuning}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Migration to Optuna}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Hyperparameter tuning}{2}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Results}{3}{subsection.1.3}%
+\contentsline {section}{\numberline {2}Second bonus task: Converting the problem to a binary classification task}{4}{section.2}%
