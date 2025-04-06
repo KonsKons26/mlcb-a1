@@ -156,3 +156,72 @@ def plot_features_interactive(all_features, models_dir):
     )
 
     fig.show()
+
+
+def pretty_print_hyperparameters_optuna(all_metrics: dict) -> str:
+    s = ""
+    for model_type in all_metrics["training"]:
+        s += "-"*30 
+        s += f"\n{model_type:^30}\n"
+        s += "-"*30
+        s += "\n"
+        for k, v in all_metrics["training"][model_type]["tune"]["best_hyperparameters"].items():
+            if isinstance(v, float):
+                s += f"{k:<15}{v:>15.5f}\n"
+            else:
+                s += f"{k:<15}{v:>15}\n"
+    return s
+
+
+
+def plot_metrics_optuna(all_metrics, model_types=None, metrics_types=None):
+    if model_types is None:
+        model_types = list(all_metrics.get("validation", {}).keys())
+
+    if metrics_types is None:
+        # Infer from the first model
+        first_model = next(iter(all_metrics["validation"].values()))
+        metrics_types = list(first_model.get("tune", {}).keys())
+
+    data = []
+
+    for model in model_types:
+        model_data = all_metrics["validation"].get(model, {})
+        tune_data = model_data.get("tune", {})
+        for metric in metrics_types:
+            values = tune_data.get(metric)
+            if values is None:
+                print(f"Warning: {metric} not found for {model}")
+                continue
+            for value in values:
+                data.append({
+                    "Model": model,
+                    "Metric": metric,
+                    "Value": value
+                })
+
+    df = pd.DataFrame(data)
+    if df.empty:
+        print("No data available to plot.")
+        return
+
+    # Plot
+    fig, axes = plt.subplots(1, len(metrics_types), figsize=(6 * len(metrics_types), 6))
+
+    if len(metrics_types) == 1:
+        axes = [axes]  # Make it iterable
+
+    for i, metric in enumerate(metrics_types):
+        sns.boxplot(
+            data=df[df["Metric"] == metric],
+            x="Metric",
+            y="Value",
+            hue="Model",
+            ax=axes[i]
+        )
+        axes[i].set_title(f'{metric} by Model')
+        axes[i].set_xlabel('')
+        axes[i].legend().set_title('Model')
+
+    plt.tight_layout()
+    plt.show()
