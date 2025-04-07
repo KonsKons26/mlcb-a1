@@ -1,0 +1,26 @@
+Host age
+Acidaminococcus intestini
+Akkermansia muciniphila
+Alistipes onderdonkii
+Alistipes putredinis
+Alistipes shahii
+Anaerotruncus colihominis
+Bacteroides eggerthii
+Bacteroides fragilis
+Bacteroides intestinalis
+Bacteroides massiliensis
+Bacteroides ovatus
+Bacteroides plebeius
+Barnesiella viscericola
+Bifidobacterium pseudocatenulatum
+Blautia glucerasea
+Coprococcus eutactus
+Faecalibacterium sp. MC_41
+Holdemanella biformis
+Oscillibacter valericigenes
+Parabacteroides distasonis
+Parabacteroides merdae
+Roseburia hominis
+Roseburia intestinalis
+Ruminiclostridium thermocellum
+Ruminococcus albus

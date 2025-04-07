@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1744019074.6078 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" "bonus.pdf" "bonus" 1744019075.22488 0
+["pdflatex"] 1744029544.89205 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" "bonus.pdf" "bonus" 1744029545.5311 0
   "/etc/texmf/web2c/texmf.cnf" 1729638216.40103 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" 1744019074.41476 6072 20dc783dd576c9ce1290db5f467e1082 ""
+  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/bonus.tex" 1744029544.67195 6072 20dc783dd576c9ce1290db5f467e1082 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex8.tfm" 1246382020 988 bdf658c3bfc2d96d3c8b02cfc1c94c20 ""
@@ -125,11 +125,11 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1729638238.89271 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1729638334 8214299 96f9d54efb5f15826d8177841ce33d37 ""
-  "bonus.aux" 1744019075.16676 1595 76af913ab0e1c4563fdf2618f3f8fb79 "pdflatex"
-  "bonus.out" 1744019075.16676 1197 0e5af3fc282584927e82ad87724e7280 "pdflatex"
-  "bonus.tex" 1744019074.41476 6072 20dc783dd576c9ce1290db5f467e1082 ""
-  "bonus.toc" 1744019075.16876 486 770af34ff3d07ead4d0f9baa23f69667 "pdflatex"
-  "ims/optuna.png" 1744018869.89258 57645 d06a49144f1899de38df5ab5390cb952 ""
+  "bonus.aux" 1744029545.46795 1595 76af913ab0e1c4563fdf2618f3f8fb79 "pdflatex"
+  "bonus.out" 1744029545.46895 1197 0e5af3fc282584927e82ad87724e7280 "pdflatex"
+  "bonus.tex" 1744029544.67195 6072 20dc783dd576c9ce1290db5f467e1082 ""
+  "bonus.toc" 1744029545.46995 486 770af34ff3d07ead4d0f9baa23f69667 "pdflatex"
+  "ims/optuna.png" 1744029319.10179 53418 349b223b773501e11098e227da038057 ""
   (generated)
   "bonus.aux"
   "bonus.log"

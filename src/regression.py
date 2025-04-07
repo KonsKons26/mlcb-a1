@@ -268,7 +268,7 @@ class Regressor:
                 - n_folds: The number of folds for KFold cross-validation.
 
         """
-        threshold = feature_selection_dict.get("threshold", 0.1)
+        threshold = feature_selection_dict.get("threshold", 0.5)
         k = feature_selection_dict.get("k", 20)
         n_folds = feature_selection_dict.get("n_folds", 5)
 
