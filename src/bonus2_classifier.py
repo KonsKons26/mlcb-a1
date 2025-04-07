@@ -1,10 +1,16 @@
 import os
 
+import numpy as np
+
 import pandas as pd
 
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
+from sklearn.metrics import (
+    accuracy_score, balanced_accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, average_precision_score, confusion_matrix,
+    matthews_corrcoef
+)
 from sklearn.utils import resample
 from sklearn.feature_selection import (
     VarianceThreshold, SelectKBest, r_regression, f_regression
@@ -102,13 +108,23 @@ class Classifier:
 
         X_val = pd.DataFrame(scaler.transform(X_val), columns=X_val.columns)
 
-        all_metrics = {"RMSE": [], "MAE": [], "R2": []}
+        all_metrics = {
+            "accuracy": [],
+            "balanced_accuracy": [],
+            "precision": [],
+            "recall": [],
+            "f1": [],
+            "roc_auc": [],
+            "average_precision": [],
+            "confusion_matrix": [],
+            "matthews_corrcoef": []
+        }
 
         for _ in range(n_bootstrap):
             X_sample, y_sample = resample(X_val, y_val)
 
             y_pred = model.predict(X_sample)
-            metrics = self._regression_metrics(y_sample, y_pred)
+            metrics = self._classification_metrics(y_sample, y_pred)
 
             for metric_name, metric_values in metrics.items():
                 all_metrics[metric_name].extend(metric_values)
@@ -143,7 +159,7 @@ class Classifier:
 
         self.model.fit(X_train, y_train)
         y_pred = self.model.predict(X_test)
-        metrics = self._regression_metrics(y_test, y_pred)
+        metrics = self._classification_metrics(y_test, y_pred)
 
         self.metrics = metrics
         self.scaler = scaler
@@ -167,7 +183,18 @@ class Classifier:
 
         # Check every selector and calculate metrics using KFold cross-validation
         for selector_name, selector in selectors.items():
-            metrics_per_selector = {"RMSE": [], "MAE": [], "R2": [], "features": []}
+            metrics_per_selector = {
+                "accuracy": [],
+                "balanced_accuracy": [],
+                "precision": [],
+                "recall": [],
+                "f1": [],
+                "roc_auc": [],
+                "average_precision": [],
+                "confusion_matrix": [],
+                "matthews_corrcoef": [],    
+                "features": []
+            }
 
             kf = KFold(
                 n_splits=n_folds,
@@ -204,7 +231,7 @@ class Classifier:
                 y_pred = self.model.predict(X_test)
 
                 # Store metrics
-                metrics = self._regression_metrics(y_test, y_pred)
+                metrics = self._classification_metrics(y_test, y_pred)
                 for metric_name, metric_values in metrics.items():
                     metrics_per_selector[metric_name].extend(metric_values)
 
@@ -247,7 +274,7 @@ class Classifier:
         self.model.fit(X_train, y_train)
         y_pred = self.model.predict(X_test)
 
-        metrics = self._regression_metrics(y_test, y_pred)
+        metrics = self._classification_metrics(y_test, y_pred)
         self.metrics = metrics
         self.metrics["features"] = X_selected.columns.to_numpy()
         self.metrics["feature_idxs"] = selector.get_support(indices=True)
@@ -256,7 +283,7 @@ class Classifier:
         self._save_features(self.model_type)
 
 
-    def _tune_model(self, param_grid, n_trials, timeout=None):
+    def _tune_model(self, param_grid, n_folds, n_trials, timeout=None):
         best_features = self._load_features(self.model_type)
         X = self.X[best_features]
         y = self.y
@@ -281,20 +308,20 @@ class Classifier:
             # Create model with trial parameters
             params = {}
             for param_name, param_dist in param_grid.items():
-                if isinstance(param_dist, IntDistribution):
+                if isinstance(param_dist, IntDistribution) or isinstance(param_dist, int):
                     params[param_name] = trial.suggest_int(
                         param_name, 
                         param_dist.low, 
                         param_dist.high
                     )
-                elif isinstance(param_dist, FloatDistribution):
+                elif isinstance(param_dist, FloatDistribution) or isinstance(param_dist, float):
                     params[param_name] = trial.suggest_float(
                         param_name, 
                         param_dist.low, 
                         param_dist.high, 
                         log=getattr(param_dist, 'log', False)
                     )
-                elif isinstance(param_dist, CategoricalDistribution):
+                elif isinstance(param_dist, CategoricalDistribution) or isinstance(param_dist, list):
                     params[param_name] = trial.suggest_categorical(
                         param_name,
                         param_dist.choices
@@ -302,16 +329,29 @@ class Classifier:
 
             model_instance = type(self.model)(**params)
 
-            #
-            model_instance.fit(X_train, y_train)
-            y_pred = model_instance.predict(X_test)
+            kf = KFold(
+                n_splits=n_folds, shuffle=True, random_state=self.random_state
+            )
 
-            return root_mean_squared_error(y_test, y_pred)
+            scores = []
+
+            for train_idx, val_idx in kf.split(X_train):
+                X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
+                y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
+
+                model_instance.fit(X_fold_train, y_fold_train)
+
+                y_fold_pred = model_instance.predict(X_fold_val)
+
+                score = balanced_accuracy_score(y_fold_val, y_fold_pred)
+                scores.append(score)
+
+            return np.mean(scores)
 
         sampler = TPESampler(seed=self.random_state)
 
         self.study = optuna.create_study(
-            direction="minimize",
+            direction="maximize",
             sampler=sampler
         )
         optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -329,7 +369,7 @@ class Classifier:
         y_pred = best_model.predict(X_test)
         
         self.model = best_model
-        self.metrics = self._regression_metrics(y_test, y_pred)
+        self.metrics = self._classification_metrics(y_test, y_pred)
         self.metrics["best_hyperparameters"] = best_params
         self.metrics["best_score"] = self.study.best_value
         self.metrics["features"] = best_features
@@ -341,20 +381,20 @@ class Classifier:
         if mode == "tune":
             if not tune_dict.get("param_grid"):
                 param_grid = {
-                    "penalty": CategoricalDistribution(["l1", "l2", "elasticnet"]),
+                    "penalty": CategoricalDistribution(["elasticnet"]),
+                    "l1_ratio": FloatDistribution(0, 1),
                     "tol": FloatDistribution(1e-7, 1e-1, log=True),
                     "C": FloatDistribution(0.001, 1000, log=True),
                     "fit_intercept": CategoricalDistribution([True, False]),
-                    "solver": CategoricalDistribution(
-                        ["newton-cholesky", "lbfgs", "liblinear"]
-                    )
+                    "solver": CategoricalDistribution(["saga"]),
+                    "max_iter": IntDistribution(1_000_000, 10_000_000),
                 }
             else:
                 param_grid = tune_dict.get("param_grid")
             n_folds = tune_dict.get("n_folds", 5)
-            n_trials = tune_dict.get("n_trials", 1000)
+            n_trials = tune_dict.get("n_trials", 100)
             timeout = tune_dict.get("timeout", None)
-            self._tune_model(param_grid, n_trials, timeout)
+            self._tune_model(param_grid, n_folds, n_trials, timeout)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
@@ -362,15 +402,14 @@ class Classifier:
         if mode == "tune":
             if not tune_dict.get("param_grid"):
                 param_grid = {
-                    "var_smoothing": FloatDistribution(1e-10, 1e-1, log=True),
-                    "priors": CategoricalDistribution([None, [0.5, 0.5]])
+                    "var_smoothing": FloatDistribution(1e-9, 1e-1, log=True)
                 }
             else:
                 param_grid = tune_dict.get("param_grid")
             n_folds = tune_dict.get("n_folds", 5)
-            n_trials = tune_dict.get("n_trials", 1000)
+            n_trials = tune_dict.get("n_trials", 100)
             timeout = tune_dict.get("timeout", None)
-            self._tune_model(param_grid, n_trials, timeout)
+            self._tune_model(param_grid, n_folds, n_trials, timeout)
         else:
             self._train_model_no_tune(mode, feature_selection_dict)
 
@@ -381,25 +420,28 @@ class Classifier:
             "SelectKBest-f_regression": []
         }
         for selection_method, metrics in self.metrics.items():
-            rmse = metrics["RMSE"]
-            mae = metrics["MAE"]
-            r2 = metrics["R2"]
+            accuracy = np.mean(metrics["accuracy"])
+            precision = np.mean(metrics["precision"])
+            recall = np.mean(metrics["recall"])
+            f1 = np.mean(metrics["f1"])
 
-            mean_r2 = sum(r2) / len(r2)
-            mean_rmse = sum(rmse) / len(rmse)
-            mean_mae = sum(mae) / len(mae)
-
-            all_methods[selection_method] = mean_r2 / ((mean_rmse + mean_mae) / 2)
+            all_methods[selection_method] = (accuracy + precision + recall + f1) / 4
 
         best_method = max(all_methods, key=all_methods.get)
 
         return best_method
 
-    def _regression_metrics(self, y_test, y_pred) -> dict:
+    def _classification_metrics(self, y_test, y_pred) -> dict:
         return {
-            "RMSE": [root_mean_squared_error(y_test, y_pred)],
-            "MAE": [mean_absolute_error(y_test, y_pred)],
-            "R2": [r2_score(y_test, y_pred)]
+            "accuracy": [accuracy_score(y_test, y_pred)],
+            "balanced_accuracy": [balanced_accuracy_score(y_test, y_pred)],
+            "precision": [precision_score(y_test, y_pred)],
+            "recall": [recall_score(y_test, y_pred)],
+            "f1": [f1_score(y_test, y_pred)],
+            "roc_auc": [roc_auc_score(y_test, y_pred)],
+            "average_precision": [average_precision_score(y_test, y_pred)],
+            "confusion_matrix": [confusion_matrix(y_test, y_pred)],
+            "matthews_corrcoef": [matthews_corrcoef(y_test, y_pred)]
         }
 
     def _save_model(self, model_name: str):
@@ -437,7 +479,7 @@ class Classifier:
 def pipeline(
       models_dir,
       dataset_dir,
-      target_col,
+      target_col="BMI",
       binary_limit=25,
       model_types=["LogisticRegression", "GaussianNB"],
       modes=["baseline", "feature_selection", "tune"],

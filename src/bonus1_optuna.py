@@ -128,31 +128,24 @@ class RegressorOptuna(Regressor):
 
             model_instance = type(self.model)(**params)
 
-            #
-            model_instance.fit(X_train, y_train)
-            y_pred = model_instance.predict(X_test)
+            kf = KFold(
+                n_splits=n_folds, shuffle=True, random_state=self.random_state
+            )
 
-            return root_mean_squared_error(y_test, y_pred)
-            #
+            scores = []
 
-            # kf = KFold(
-            #     n_splits=n_folds, shuffle=True, random_state=self.random_state
-            # )
+            for train_idx, val_idx in kf.split(X_train):
+                X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
+                y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
 
-            # scores = []
+                model_instance.fit(X_fold_train, y_fold_train)
 
-            # for train_idx, val_idx in kf.split(X_train):
-            #     X_fold_train, X_fold_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
-            #     y_fold_train, y_fold_val = y_train.iloc[train_idx], y_train.iloc[val_idx]
+                y_fold_pred = model_instance.predict(X_fold_val)
 
-            #     model_instance.fit(X_fold_train, y_fold_train)
+                score = root_mean_squared_error(y_fold_val, y_fold_pred)
+                scores.append(score)
 
-            #     y_fold_pred = model_instance.predict(X_fold_val)
-
-            #     score = r2_score(y_fold_val, y_fold_pred)
-            #     scores.append(score)
-
-            # return np.mean(scores)
+            return np.mean(scores)
 
         sampler = TPESampler(seed=self.random_state)
 

@@ -100,25 +100,25 @@ values chosen by \texttt{Optuna} are shown in Table~\ref{tab:hyperparams}.
         \textbf{Model} & \textbf{Parameter} & \textbf{Values} & \textbf{Picked value} \\
         \hline
         \multirow{3}{*}{ElasticNet} 
-            & \texttt{$\alpha$} & (0.01, 1.0) & $0.11850$ \\
-            & \texttt{l1 ratio} & (0.0, 1.0) & $0.77838$ \\
-            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & $0.00100$ \\
+            & \texttt{$\alpha$} & (0.01, 1.0) & $0.9998$ \\
+            & \texttt{l1 ratio} & (0.0, 1.0) & $0.00004$ \\
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & $0.0001$ \\
         \hline
         \multirow{7}{*}{SVR} 
             & \texttt{kernel} & [`rbf', `linear', `poly', `sigmoid'] & `rbf' \\
-            & \texttt{degree} & (2, 5) & $4$ \\
-            & \texttt{$\gamma$} & [`scale', `auto'] & `scale' \\
-            & \texttt{coef\_0} & (0.0, 1) & $0.93453$ \\
-            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-7 \\
-            & \texttt{C} & (0.1, 10) & $1.63421$ \\
-            & \texttt{$\epsilon$} & (0.0, 10.0) & $0.92788$ \\
+            & \texttt{degree} & (2, 5) & $2$ \\
+            & \texttt{$\gamma$} & [`scale', `auto'] & `auto' \\
+            & \texttt{coef\_0} & (0.0, 1) & $0.46631$ \\
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-6 \\
+            & \texttt{C} & (0.1, 10) & $1.49583$ \\
+            & \texttt{$\epsilon$} & (0.0, 10.0) & $0.10783$ \\
         \hline
         \multirow{6}{*}{BayesianRidge} 
-            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-7 \\
-            & \texttt{$\alpha_1$} & (1e-9, 1e-3) & $0.0$ \\
-            & \texttt{$\alpha_2$} & (1e-9, 1e-3) & $0.00065$ \\
-            & \texttt{$\lambda_1$} & (1e-3, 1e-9) & $0.0009999$ \\
-            & \texttt{$\lambda_2$} & (1e-3, 1e-9) & $0.0$ \\
+            & \texttt{tolerance} & [1e-3, 1e-4, 1e-5, 1e-6, 1e-7] & 1e-3 \\
+            & \texttt{$\alpha_1$} & (1e-9, 1e-3) & $0.00001$ \\
+            & \texttt{$\alpha_2$} & (1e-9, 1e-3) & $0.0$ \\
+            & \texttt{$\lambda_1$} & (1e-3, 1e-9) & $0.0$ \\
+            & \texttt{$\lambda_2$} & (1e-3, 1e-9) & $0.001$ \\
             & \texttt{compute\_score} & [True, False] & True \\
         \hline
     \end{tabular}
