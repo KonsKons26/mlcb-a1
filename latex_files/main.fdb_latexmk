@@ -1,7 +1,7 @@
 # Fdb version 4
-["pdflatex"] 1744029445.44136 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/main.tex" "main.pdf" "main" 1744029447.50675 0
+["pdflatex"] 1744030294.57633 "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/main.tex" "main.pdf" "main" 1744030296.61742 0
   "/etc/texmf/web2c/texmf.cnf" 1729638216.40103 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/main.tex" 1744029445.21432 18435 91f25ee42e961a19f1c75fda3d1a3b13 ""
+  "/home/cotsios/dsit/2nd-semester/ml-in-comp-bio/Assignment-1/latex_files/main.tex" 1744030294.33814 18435 6248f58235dfd94b3cf98069d22b2d1c ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/tcrm1200.tfm" 1136768653 1536 74b7293ec3713bb7fdca8dd1bd1f469c ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex7.tfm" 1246382020 1004 54797486969f23fa377b128694d548df ""
@@ -151,10 +151,10 @@
   "ims/svr_r2.png" 1744029242.86808 23205 f4a4cbcd8ebd8b4b56c1d70bbba78397 ""
   "ims/svr_rmse.png" 1744029223.48915 17941 f2913362864c6bc3347cbb1ad3dee24d ""
   "ims/zeros_and_mean_for_non_zeros.png" 1743809157.34831 208939 b79b6d469324d9dc3b363702e8673d83 ""
-  "main.aux" 1744029447.43731 8459 3823206980f4acffa93992f309c12d3f "pdflatex"
-  "main.out" 1744029447.43731 1047 5e22ffe1234903440476024f7c71b29c "pdflatex"
-  "main.tex" 1744029445.21432 18435 91f25ee42e961a19f1c75fda3d1a3b13 ""
-  "main.toc" 1744029447.43931 684 d8957fc7ac1090df0a862fe04ab4074f "pdflatex"
+  "main.aux" 1744030296.54813 8459 3823206980f4acffa93992f309c12d3f "pdflatex"
+  "main.out" 1744030296.54813 1047 5e22ffe1234903440476024f7c71b29c "pdflatex"
+  "main.tex" 1744030294.33814 18435 6248f58235dfd94b3cf98069d22b2d1c ""
+  "main.toc" 1744030296.55013 684 d8957fc7ac1090df0a862fe04ab4074f "pdflatex"
   (generated)
   "main.aux"
   "main.log"
