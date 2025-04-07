@@ -11,34 +11,37 @@ import plotly.graph_objects as go
 def pretty_print_metrics(metrics: dict) -> str:
     """Function to tabulate (in a way) the results of the pipeline."""
     string = ""
-    string += "========================================================\n"
-    for model in ["ElasticNet", "SVR", "BayesianRidge"]:
-        string += "\t\t--------------------\n"
-        string += f"\t\t{model:^20}\n"
-        string += "\t\t--------------------\n"
+    string += "="*80
+    string += "\n"
+    for model in metrics["training"].keys():
+        string += f"{"-"*40:^80}\n"
+        string += f"{model:^80}\n"
+        string += f"{"-"*40:^80}\n"
 
         for mode in ["baseline", "feature_selection", "tune"]:
             string += f"{mode}:\n"
-            string += "\ttraining\t\t\tvalidation\n"
-            string += "\t--------\t\t\t----------\n"
+            string += f"{"-"*30}\n"
+            string += f"{"training":<40}{"validation":>40}\n"
+            string += f"{"-"*9:<40}{"-"*10:>40}\n"
 
             for (ktrain, vtrain), (kval, vval) in zip(
                 metrics["training"][model][mode].items(),
                 metrics["validation"][model][mode].items()
             ):
-                string += f"\t{ktrain}:\t{np.mean(vtrain):.4f}\t\t\t{kval}:\t{np.mean(vval):.4f}\n"
+                string += f"{f"{ktrain}: {np.mean(vtrain):.4f}":<40}|{f"{kval}: {np.mean(vval):.4f}":>40}\n"
 
             if mode == "feature_selection":
-                string += f"\n\tFeature selection method:\n\t\t\t{metrics["training"][model]["feature_selection"]["feature_selection_method"]}\n"
-                string += f"\tNumber of features used:\n\t\t\t{len(metrics["training"][model]["feature_selection"]["features"])}\n"
+                string += f"\n\tFeature selection method:\n\t\t\t\t\t{metrics["training"][model]["feature_selection"]["feature_selection_method"]}\n"
+                string += f"\tNumber of features used:\n\t\t\t\t\t{len(metrics["training"][model]["feature_selection"]["features"])}\n"
 
             if mode == "tune":
                 string += "\n\tBest hyperparameters:\n"
                 for k, v in metrics["training"][model]["tune"]["best_hyperparameters"].items():
-                    string += f"\t\t\t{k}: {v}\n"
+                    string += f"\t\t\t\t{k}: {v}\n"
 
             string += "\n"
-        string += "=========================================================\n"
+        string += "="*80
+        string += "\n"
     return string
 
 
@@ -92,11 +95,13 @@ def plot_metrics(
 
 
 
-def plot_features_interactive(all_features, models_dir):
+def plot_features_interactive(
+        all_features,
+        models_dir,
+        models = ["ElasticNet", "SVR", "BayesianRidge"]
+    ):
     """Plot the features selected across all models with model-based color
     segments."""
-
-    models = ["ElasticNet", "SVR", "BayesianRidge"]
 
     feat_dict = {f: {model: 0 for model in models} for f in all_features}
 

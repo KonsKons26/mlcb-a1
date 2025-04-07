@@ -165,7 +165,7 @@ class Classifier:
         self.scaler = scaler
 
     def _feature_selection(self, feature_selection_dict):
-        threshold = feature_selection_dict.get("threshold", 0.1)
+        threshold = feature_selection_dict.get("threshold", 0.5)  ####
         k = feature_selection_dict.get("k", 20)
         n_folds = feature_selection_dict.get("n_folds", 5)
 
@@ -560,3 +560,4 @@ def pipeline(
     print("Pipeline completed")
     print("------------------\n")
     return {"training": all_training_metrics, "validation": all_validation_metrics}
+
